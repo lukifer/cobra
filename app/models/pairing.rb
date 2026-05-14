@@ -4,6 +4,10 @@ class Pairing < ApplicationRecord # rubocop:disable Metrics/ClassLength,Style/Do
   belongs_to :round, touch: true
   belongs_to :player1, class_name: 'Player', optional: true
   belongs_to :player2, class_name: 'Player', optional: true
+  belongs_to :player1_deck1_player, class_name: 'Player', optional: true
+  belongs_to :player1_deck2_player, class_name: 'Player', optional: true
+  belongs_to :player2_deck1_player, class_name: 'Player', optional: true
+  belongs_to :player2_deck2_player, class_name: 'Player', optional: true
   has_one :tournament, through: :round
   has_one :stage, through: :round
 

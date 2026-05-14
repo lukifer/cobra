@@ -12,26 +12,47 @@ module PairingStrategies
       @bye_loser_score = 0
 
       @plain_pairings = []
+      @player_models_by_id = nil
+      @implicit_faction_bye_plain = nil
     end
 
     def pair!
+      @paired_players = nil
+      @players_to_pair = nil
+      @player_models_by_id = preload_player_models
+      @implicit_faction_bye_plain = nil
+
+      @plain_pairings = []
+
       assign_first_round_byes!
 
-      # paired_players will invoke the pairing logic and eventually evaluate all potential pairings.
       paired_players.each do |pairing|
         pp = pairing_params(pairing)
         @plain_pairings << PlainPairing.new(pp[:player1], pp[:score1], pp[:player2], pp[:score2])
       end
 
+      append_implicit_faction_bye_pairing!
+
       SwissTables.assign_table_numbers!(@plain_pairings, round.stage.table_ranges)
 
-      # Set player sides for the pairings.
+      # Resolve sides before deck-source assignment.
       apply_sides!
+
+      round_roster_player_ids = @plain_pairings.flat_map { |pp| pp.players.map(&:id) }.compact.uniq
 
       # Write the results to the database.
       ActiveRecord::Base.transaction do
         @plain_pairings.each do |pp|
-          p = Pairing.new(round:, player1_id: pp.player1&.id, player2_id: pp.player2&.id, table_number: pp.table_number)
+          deck_attrs = SmashupDeckSources.attributes_for_plain_pairing(
+            pp,
+            round_roster_player_ids,
+            @player_models_by_id,
+            random: random
+          )
+
+          p = Pairing.new(
+            { round:, player1_id: pp.player1&.id, player2_id: pp.player2&.id, table_number: pp.table_number }.merge(deck_attrs)
+          )
           # Assign scores for byes.
           if pp.bye?
             if pp.player1.nil?
@@ -163,14 +184,7 @@ module PairingStrategies
     end
 
     def paired_players
-      # The first round is simple: Pair off the eligible players randomly.
-      # players_to_pair will not return players with byes
-      if first_round?
-        @paired_players ||= players_to_pair.shuffle(random:).in_groups_of(2, nil)
-        return @paired_players
-      end
-
-      @paired_players ||= self.class.calculate_pairings(players_to_pair)
+      @paired_players ||= compute_faction_swiss_pairings
     end
 
     def pairing_params(pairing)
@@ -204,6 +218,85 @@ module PairingStrategies
 
     def first_round?
       (stage.rounds - [round]).empty?
+    end
+
+    def append_implicit_faction_bye_pairing!
+      return if @implicit_faction_bye_plain.nil?
+
+      @plain_pairings << PlainPairing.new(@implicit_faction_bye_plain, @bye_winner_score, nil, @bye_loser_score)
+    end
+
+    def preload_player_models
+      Player.where(tournament_id: round.tournament_id)
+        .includes(:corp_identity_ref, :runner_identity_ref)
+        .index_by(&:id)
+    end
+
+    def completed_stage_pairing_pairs
+      Pairing.joins(:round)
+        .where(rounds: { tournament_id: round.tournament_id, stage_id: stage.id, completed: true })
+        .non_bye
+        .pluck(:player1_id, :player2_id)
+    end
+
+    def build_faction_pairing_player(plain_player)
+      ar = @player_models_by_id[plain_player.id]
+      PairingStrategies::FactionPairing::Player.new(
+        id: plain_player.id,
+        faction: pairing_faction_string(ar),
+        score: plain_player.points
+      )
+    end
+
+    def pairing_faction_string(player_ar)
+      return '' unless player_ar
+
+      player_ar.corp_identity_ref&.faction&.to_s.presence ||
+        player_ar.runner_identity_ref&.faction&.to_s.presence ||
+        player_ar.corp_identity.presence ||
+        player_ar.runner_identity.presence ||
+        ''
+    end
+
+    def compute_faction_swiss_pairings
+      to_pair = players_to_pair
+      @implicit_faction_bye_plain = nil
+
+      if to_pair.empty?
+        @implicit_faction_bye_plain = nil
+        return []
+      end
+
+      if to_pair.size == 1
+        @implicit_faction_bye_plain = to_pair.first
+        return []
+      end
+
+      fp = to_pair.map { |pp| build_faction_pairing_player(pp) }
+      ineligible_bye_ids = to_pair.each_with_object(Set.new) { |p, s| s.add(p.id) if p.had_bye }
+      pairs = PairingStrategies::FactionPairing.pair_players(
+        fp,
+        completed_stage_pairing_pairs,
+        random: random,
+        ineligible_bye_ids: ineligible_bye_ids
+      )
+      mapped = pairs.map { |a, b| [players[a.id], players[b.id]] }
+
+      if faction_pairs_invalid?(mapped)
+        @implicit_faction_bye_plain = nil
+        return self.class.calculate_pairings(to_pair)
+      end
+
+      matched_ids = pairs.flat_map { |a, b| [a.id, b.id] }.to_set
+      @implicit_faction_bye_plain = to_pair.find { |p| !matched_ids.include?(p.id) }
+
+      mapped
+    end
+
+    def faction_pairs_invalid?(mapped)
+      mapped.any? do |p1, p2|
+        p1.opponents[p2.id]&.size.to_i >= 2
+      end
     end
 
     def apply_sides!

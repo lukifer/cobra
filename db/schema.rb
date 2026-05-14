@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_10_08_193019) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_09_120500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -165,7 +165,15 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_08_193019) do
     t.integer "table_number"
     t.boolean "two_for_one", default: false, null: false
     t.datetime "updated_at", precision: nil, default: -> { "now()" }, null: false
+    t.bigint "player1_deck1_player_id"
+    t.bigint "player1_deck2_player_id"
+    t.bigint "player2_deck1_player_id"
+    t.bigint "player2_deck2_player_id"
+    t.index ["player1_deck1_player_id"], name: "index_pairings_on_player1_deck1_player_id"
+    t.index ["player1_deck2_player_id"], name: "index_pairings_on_player1_deck2_player_id"
     t.index ["player1_id"], name: "index_pairings_on_player1_id"
+    t.index ["player2_deck1_player_id"], name: "index_pairings_on_player2_deck1_player_id"
+    t.index ["player2_deck2_player_id"], name: "index_pairings_on_player2_deck2_player_id"
     t.index ["player2_id"], name: "index_pairings_on_player2_id"
     t.index ["round_id"], name: "index_pairings_on_round_id"
   end
@@ -337,7 +345,11 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_08_193019) do
   add_foreign_key "custom_prizes", "tournaments"
   add_foreign_key "deck_cards", "decks"
   add_foreign_key "decks", "players"
+  add_foreign_key "pairings", "players", column: "player1_deck1_player_id"
+  add_foreign_key "pairings", "players", column: "player1_deck2_player_id"
   add_foreign_key "pairings", "players", column: "player1_id"
+  add_foreign_key "pairings", "players", column: "player2_deck1_player_id"
+  add_foreign_key "pairings", "players", column: "player2_deck2_player_id"
   add_foreign_key "pairings", "players", column: "player2_id"
   add_foreign_key "pairings", "rounds"
   add_foreign_key "players", "identities", column: "corp_identity_ref_id"

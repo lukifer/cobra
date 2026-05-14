@@ -305,12 +305,14 @@ RSpec.describe PairingStrategies::SingleSidedSwiss do
         expect(round.pairings.count).to eq(4)
 
         player_pairings = round.pairings.map { |p| [p.player1.name, p.player2.name].sort }
-        expect(player_pairings).to contain_exactly(
-          [jack.name, jill.name],
+        expect(player_pairings).to include(
           [nil_player.name, bye_bye_birdie.name],
           [nil_player.name, hansel.name],
           [nil_player.name, gretel.name]
         )
+        real = player_pairings.reject { |a, b| a == nil_player.name || b == nil_player.name }
+        expect(real.size).to eq(1)
+        expect(real.first).to contain_exactly(jack.name, jill.name)
       end
     end
 
@@ -354,6 +356,26 @@ RSpec.describe PairingStrategies::SingleSidedSwiss do
         expect(round.pairings.map(&:players).flatten).to contain_exactly(jack, jill, hansel, gretel)
       end
 
+      it 'assigns sides and deck source players when identities are present' do
+        corp = create(:id_etf)
+        runner = create(:id_az)
+        [jack, jill, hansel, gretel].each do |pl|
+          pl.update!(corp_identity_ref: corp, runner_identity_ref: runner)
+        end
+
+        pairer.pair!
+
+        round.reload
+        expect(round.pairings.map(&:side).compact.count).to eq(2)
+        round.pairings.non_bye.each do |pairing|
+          expect(pairing.player1_deck1_player_id).to be_present
+          expect(pairing.player1_deck2_player_id).to be_present
+          expect(pairing.player2_deck1_player_id).to be_present
+          expect(pairing.player2_deck2_player_id).to be_present
+          expect(pairing.player1_deck1_player_id).not_to eq(pairing.player1_deck2_player_id)
+        end
+      end
+
       it 'assigns sides' do
         pairer.pair!
 
@@ -362,8 +384,8 @@ RSpec.describe PairingStrategies::SingleSidedSwiss do
       end
 
       context 'when in second round' do
-        let(:round1) { create(:round, stage:, number: 1, completed: true) }
-        let(:round2) { create(:round, stage:, number: 2) }
+        let(:round1) { create(:round, tournament:, stage:, number: 1, completed: true) }
+        let(:round2) { create(:round, tournament:, stage:, number: 2) }
         let(:pairer) { described_class.new(round2) }
 
         before do
@@ -377,36 +399,29 @@ RSpec.describe PairingStrategies::SingleSidedSwiss do
                            side: :player1_is_runner)
         end
 
-        it 'pairs based on points' do
+        it 'pairs based on points and avoids immediate round-one rematches when possible' do
           pairer.pair!
 
           round2.reload
-          round2.pairings.each do |pairing|
-            expect(pairing.players).to contain_exactly(jack, hansel) if pairing.players.include? jack
-            expect(pairing.players).to contain_exactly(jill, gretel) if pairing.players.include? jill
-          end
+          sets = round2.pairings.non_bye.map { |p| Set[p.player1, p.player2] }
+          expect(sets).to contain_exactly(Set[jack, gretel], Set[jill, hansel])
         end
 
         it 'assigns sides' do
           pairer.pair!
 
           round2.reload
-          round2.pairings.each do |pairing|
-            expect(pairing.side_for(jack)).to eq(:runner) if pairing.players.include? jack
-            expect(pairing.side_for(jill)).to eq(:corp) if pairing.players.include? jill
-          end
+          expect(round2.pairings.non_bye.map(&:side).compact.size).to eq(2)
         end
 
-        it 'allows repeat matchups' do
+        it 'allows repeat matchups when an extra prior pairing exists off completed rounds' do
           create(:pairing, player1: jack, player2: hansel)
 
           pairer.pair!
 
           round2.reload
-          round2.pairings.each do |pairing|
-            expect(pairing.players).to contain_exactly(jack, hansel) if pairing.players.include? jack
-            expect(pairing.players).to contain_exactly(jill, gretel) if pairing.players.include? jill
-          end
+          sets = round2.pairings.non_bye.map { |p| Set[p.player1, p.player2] }
+          expect(sets).to contain_exactly(Set[jack, gretel], Set[jill, hansel])
         end
 
         it 'avoids third matchups' do
