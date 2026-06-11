@@ -46,6 +46,29 @@ RSpec.describe Tournament do
     end
   end
 
+  describe '#smashup_format?' do
+    it 'is true when the play format name is Smashup' do
+      fmt = create(:format, name: 'Smashup', position: 98)
+      t = create(:tournament, format: fmt)
+
+      expect(t.smashup_format?).to be(true)
+    end
+
+    it 'is true when the play format name differs only by case' do
+      fmt = create(:format, name: 'SMASHUP', position: 96)
+      t = create(:tournament, format: fmt)
+
+      expect(t.smashup_format?).to be(true)
+    end
+
+    it 'is false without a format or when the format name differs' do
+      expect(create(:tournament).smashup_format?).to be(false)
+
+      other = create(:format, name: 'Standard', position: 2)
+      expect(create(:tournament, format: other).smashup_format?).to be(false)
+    end
+  end
+
   describe 'stream_url' do
     it 'has no stream_url by default' do
       expect(tournament.stream_url).to be_nil

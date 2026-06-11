@@ -4,7 +4,8 @@ RSpec.describe PairingStrategies::SingleSidedSwiss do
   let(:pairer) { described_class.new(round, Random.new(1234)) }
   let(:round) { create(:round, number: 1, tournament:, stage:) }
   let(:stage) { tournament.current_stage }
-  let(:tournament) { create(:tournament, swiss_format: :single_sided) }
+  let(:smashup_format) { Format.find_or_create_by!(name: 'Smashup') { |f| f.position = 98 } }
+  let(:tournament) { create(:tournament, swiss_format: :single_sided, format: smashup_format) }
   let(:nil_player) { NilPlayer.new }
 
   before do
@@ -644,6 +645,32 @@ RSpec.describe PairingStrategies::SingleSidedSwiss do
             # Snap will have the bye
             expect(pairing.players).to include(snap) if pairing.players.include? nil_player
           end
+        end
+      end
+    end
+  end
+
+  context 'when tournament play format is not Smashup' do
+    let(:other_play_format) { create(:format, name: 'Not Smashup', position: 97) }
+    let(:tournament) { create(:tournament, swiss_format: :single_sided, format: other_play_format) }
+
+    context 'with four players first round' do
+      %i[w x y z].each do |name|
+        let!(name) do
+          create(:player, name: name.to_s.upcase, tournament:)
+        end
+      end
+
+      it 'does not set deck source player references on pairings' do
+        pairer.pair!
+
+        round.reload
+        expect(round.pairings.non_bye.count).to eq(2)
+        round.pairings.non_bye.each do |p|
+          expect(p.player1_deck1_player_id).to be_nil
+          expect(p.player1_deck2_player_id).to be_nil
+          expect(p.player2_deck1_player_id).to be_nil
+          expect(p.player2_deck2_player_id).to be_nil
         end
       end
     end

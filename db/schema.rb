@@ -152,7 +152,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_09_120500) do
   create_table "pairings", id: :serial, force: :cascade do |t|
     t.datetime "created_at", precision: nil, default: -> { "now()" }, null: false
     t.boolean "intentional_draw", default: false, null: false
+    t.bigint "player1_deck1_player_id"
+    t.bigint "player1_deck2_player_id"
     t.integer "player1_id"
+    t.bigint "player2_deck1_player_id"
+    t.bigint "player2_deck2_player_id"
     t.integer "player2_id"
     t.integer "round_id"
     t.integer "score1"
@@ -165,10 +169,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_09_120500) do
     t.integer "table_number"
     t.boolean "two_for_one", default: false, null: false
     t.datetime "updated_at", precision: nil, default: -> { "now()" }, null: false
-    t.bigint "player1_deck1_player_id"
-    t.bigint "player1_deck2_player_id"
-    t.bigint "player2_deck1_player_id"
-    t.bigint "player2_deck2_player_id"
     t.index ["player1_deck1_player_id"], name: "index_pairings_on_player1_deck1_player_id"
     t.index ["player1_deck2_player_id"], name: "index_pairings_on_player1_deck2_player_id"
     t.index ["player1_id"], name: "index_pairings_on_player1_id"

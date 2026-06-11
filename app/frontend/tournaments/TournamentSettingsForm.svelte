@@ -27,6 +27,12 @@
     onSubmitCallback?: (tournament: Tournament) => Promise<boolean>;
   } = $props();
 
+  const mashFormats = $derived(
+    options.formats.filter((format) =>
+      format.name.toLowerCase().includes("mash")
+    )
+  );
+
   // svelte-ignore state_referenced_locally
   let tournamentEdit = $state($state.snapshot(tournament));
 </script>
@@ -116,7 +122,6 @@
     class="form-control"
     bind:value={tournamentEdit.swiss_format}
   >
-    <option value="double_sided">Double-sided</option>
     <option value="single_sided">Single-sided</option>
   </select>
   {#if errors.swiss_format}
@@ -173,7 +178,7 @@
         bind:value={tournamentEdit.format_id}
       >
         <option value=""></option>
-        {#each options.formats as format (format.id)}
+        {#each mashFormats as format (format.id)}
           <option value={format.id}>{format.name}</option>
         {/each}
       </select>
@@ -312,7 +317,7 @@
   </label>
 </div>
 
-<div class="form-check mb-3">
+<div class="form-check mb-3" style="display:none;">
   <input
     type="checkbox"
     id="nrdb_deck_registration"

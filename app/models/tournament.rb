@@ -31,6 +31,18 @@ class Tournament < ApplicationRecord # rubocop:disable Metrics/ClassLength,Style
   delegate :new_round!, to: :current_stage
   delegate :pair_new_round!, to: :current_stage
 
+  # Play format from `formats` (e.g. Smashup) — used for Smashup-specific pairing and pairing rows.
+  def smashup_format?
+    return false unless format_id
+
+    fmt_name = if association(:format).loaded? && format
+                 format.name
+               else
+                 Format.where(id: format_id).pick(:name)
+               end
+    fmt_name&.casecmp?('smashup')
+  end
+
   validates :name, :slug, presence: true
   validates :slug, uniqueness: true # rubocop:disable Rails/UniqueValidationWithoutIndex
 

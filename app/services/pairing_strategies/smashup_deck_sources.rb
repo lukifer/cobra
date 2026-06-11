@@ -6,12 +6,13 @@ module PairingStrategies
   module SmashupDeckSources
     module_function
 
-    def attributes_for_plain_pairing(plain_pairing, round_plain_ids, players_by_id, random: Random.new)
+    def attributes_for_plain_pairing(plain_pairing, round_plain_ids, players_by_id, random: Random.new,
+                                     player1_side: nil)
       return {} if plain_pairing.bye?
 
       p1 = plain_pairing.player1
       p2 = plain_pairing.player2
-      side1 = plain_pairing.player1_side
+      side1 = player1_side.presence || plain_pairing.player1_side
       return {} if side1.blank?
 
       side1_sym = side1.to_sym

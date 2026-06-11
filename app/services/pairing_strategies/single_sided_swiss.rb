@@ -3,9 +3,6 @@
 # TODO(plural): Add debug level logging to the pairings class to allow dumping details out.
 module PairingStrategies
   class SingleSidedSwiss < Base # rubocop:disable Metrics/ClassLength,Style/Documentation
-    CORP = 1
-    RUNNER = 2
-
     def initialize(round, random = Random)
       super
       @bye_winner_score = 3
@@ -14,13 +11,15 @@ module PairingStrategies
       @plain_pairings = []
       @player_models_by_id = nil
       @implicit_faction_bye_plain = nil
+      @smashup_tournament_flag = false
     end
 
     def pair!
+      @smashup_tournament_flag = round.tournament.smashup_format?
       @paired_players = nil
       @players_to_pair = nil
-      @player_models_by_id = preload_player_models
       @implicit_faction_bye_plain = nil
+      @player_models_by_id = smashup_tournament? ? preload_player_models : {}
 
       @plain_pairings = []
 
@@ -31,7 +30,7 @@ module PairingStrategies
         @plain_pairings << PlainPairing.new(pp[:player1], pp[:score1], pp[:player2], pp[:score2])
       end
 
-      append_implicit_faction_bye_pairing!
+      append_implicit_faction_bye_pairing! if smashup_tournament?
 
       SwissTables.assign_table_numbers!(@plain_pairings, round.stage.table_ranges)
 
@@ -43,12 +42,18 @@ module PairingStrategies
       # Write the results to the database.
       ActiveRecord::Base.transaction do
         @plain_pairings.each do |pp|
-          deck_attrs = SmashupDeckSources.attributes_for_plain_pairing(
-            pp,
-            round_roster_player_ids,
-            @player_models_by_id,
-            random: random
-          )
+          deck_attrs = if smashup_tournament?
+                         effective_side = pp.player1_side.presence || 'runner'
+                         SmashupDeckSources.attributes_for_plain_pairing(
+                           pp,
+                           round_roster_player_ids,
+                           @player_models_by_id,
+                           random: random,
+                           player1_side: effective_side
+                         )
+                       else
+                         {}
+                       end
 
           p = Pairing.new(
             { round:, player1_id: pp.player1&.id, player2_id: pp.player2&.id, table_number: pp.table_number }.merge(deck_attrs)
@@ -62,7 +67,7 @@ module PairingStrategies
             end
           else
             # Assign sides for non-bye pairings.
-            p.side = pp.player1_side == 'corp' ? CORP : RUNNER
+            p.side = pp.player1_side == 'corp' ? Pairing.sides[:player1_is_corp] : Pairing.sides[:player1_is_runner]
           end
 
           p.save
@@ -176,6 +181,10 @@ module PairingStrategies
 
     private
 
+    def smashup_tournament?
+      @smashup_tournament_flag
+    end
+
     def assign_first_round_byes!
       players_with_byes.each do |player|
         # player[0] is the player id from the player summary structure
@@ -184,7 +193,13 @@ module PairingStrategies
     end
 
     def paired_players
-      @paired_players ||= compute_faction_swiss_pairings
+      @paired_players ||= if smashup_tournament?
+                            compute_faction_swiss_pairings
+                          elsif first_round?
+                            players_to_pair.shuffle(random:).in_groups_of(2, nil)
+                          else
+                            self.class.calculate_pairings(players_to_pair)
+                          end
     end
 
     def pairing_params(pairing)
