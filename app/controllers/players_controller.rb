@@ -15,21 +15,21 @@ class PlayersController < ApplicationController # rubocop:disable Metrics/ClassL
   def download_decks
     authorize @tournament, :update?
     render json: @tournament.players
-                 .sort_by(&:name)
-                 .flat_map { |p| p.decks.sort_by(&:side_id) }
-                 .map { |d| d.as_view(current_user) }
+                            .sort_by(&:name)
+                            .flat_map { |p| p.decks.sort_by(&:side_id) }
+                            .map { |d| d.as_view(current_user) }
   end
 
   def download_streaming
     authorize @tournament, :update?
     render json: @tournament.players.active
-                 .sort_by(&:name)
-                 .map { |p|
-                   {
-                     name: p.name_with_pronouns,
-                     include_in_stream: p.include_in_stream?
-                   }
-                 }
+                            .sort_by(&:name)
+                            .map { |p|
+                              {
+                                name: p.name_with_pronouns,
+                                include_in_stream: p.include_in_stream?
+                              }
+                            }
   end
 
   def create

@@ -9,6 +9,7 @@ document.addEventListener("turbolinks:load", function () {
       props: {
         tournamentId:
           Number(anchor.getAttribute("data-tournament") ?? "") || -1,
+        classicVersion: anchor.getAttribute("data-classic-version") === "true",
       },
     });
   }

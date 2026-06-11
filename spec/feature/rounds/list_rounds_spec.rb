@@ -29,8 +29,8 @@ RSpec.describe 'listing rounds', type: :feature do
       visit tournament_rounds_path(tournament)
 
       # Positive assertion before negative assertion to avoid false positives on the negative.
-      expect(page).to have_content('Cobra')
-      expect(page).to have_no_content('There are not enough tables to cover all players')
+      expect(page).to have_text('Cobra')
+      expect(page).to have_no_text('There are not enough tables to cover all players')
     end
   end
 
@@ -45,8 +45,8 @@ RSpec.describe 'listing rounds', type: :feature do
       visit tournament_rounds_path(tournament)
 
       aggregate_failures do
-        expect(page).to have_content('Round 1')
-        expect(page).to have_content('Round 2')
+        expect(page).to have_text('Round 1')
+        expect(page).to have_text('Round 2')
       end
     end
 
@@ -61,9 +61,9 @@ RSpec.describe 'listing rounds', type: :feature do
         visit tournament_rounds_path(tournament)
 
         aggregate_failures do
-          expect(page).to have_content('Round 1')
-          expect(page).to have_content('Round 2')
-          expect(page).to have_no_content('only the most recent round')
+          expect(page).to have_text('Round 1')
+          expect(page).to have_text('Round 2')
+          expect(page).to have_no_text('only the most recent round')
         end
       end
 
@@ -73,7 +73,7 @@ RSpec.describe 'listing rounds', type: :feature do
 
         aggregate_failures do
           expect(page).to have_current_path(root_path, ignore_query: true)
-          expect(page).to have_content("Sorry, you can't do that")
+          expect(page).to have_text("Sorry, you can't do that")
         end
       end
 
@@ -82,7 +82,7 @@ RSpec.describe 'listing rounds', type: :feature do
 
         visit tournament_rounds_path(tournament)
 
-        expect(page).to have_content('There are not enough tables to cover all players')
+        expect(page).to have_text('There are not enough tables to cover all players')
       end
 
       it 'does not display table count warning when enough custom tables exist' do
@@ -90,8 +90,8 @@ RSpec.describe 'listing rounds', type: :feature do
 
         visit tournament_rounds_path(tournament)
 
-        expect(page).to have_content('Cobra')
-        expect(page).to have_no_content('There are not enough tables to cover all players')
+        expect(page).to have_text('Cobra')
+        expect(page).to have_no_text('There are not enough tables to cover all players')
       end
     end
   end

@@ -3,7 +3,7 @@
   import Identity from "../identities/Identity.svelte";
   import FontAwesomeIcon from "../widgets/FontAwesomeIcon.svelte";
 
-  export let stage: CutStage;
+  let { stage }: { stage: CutStage } = $props();
 </script>
 
 <table class="table table-striped standings">
@@ -36,11 +36,11 @@
           {/if}
           <td class="ids">
             <Identity
-              identity={standing.player.corp_id}
+              identity={standing.player.corp_id ?? undefined}
               name_if_missing="Corp"
             />
             <Identity
-              identity={standing.player.runner_id}
+              identity={standing.player.runner_id ?? undefined}
               name_if_missing="Runner"
             />
           </td>

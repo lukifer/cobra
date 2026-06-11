@@ -12,11 +12,11 @@
   } from "./TournamentSettings";
   import TournamentSettingsForm from "./TournamentSettingsForm.svelte";
 
-  let tournament: Tournament;
-  let options: TournamentOptions = emptyTournamentOptions();
-  let featureFlags: FeatureFlags = {};
+  let tournament = $state<Tournament | undefined>(undefined);
+  let options = $state<TournamentOptions>(emptyTournamentOptions());
+  let featureFlags = $state<FeatureFlags>({});
   let csrfToken = "";
-  let errors: Errors = {};
+  let errors = $state<Errors>({});
 
   onMount(async () => {
     // Fetch any initial data needed for the form (like available options)

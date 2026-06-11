@@ -48,7 +48,7 @@ RSpec.describe 'registering a deck from NetrunnerDB', type: :feature do
     visit registration_tournament_path(tournament)
 
     # Verify present content first to avoid false positives for following check.
-    expect(page).to have_content('My Registration Information')
+    expect(page).to have_text('My Registration Information')
     expect(page).to have_no_css '#nrdb_decks'
   end
 

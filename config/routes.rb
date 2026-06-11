@@ -16,13 +16,24 @@ Rails.application.routes.draw do
         resources :tournaments, only: %i[index show]
         resources :tournament_types, only: %i[index show]
         resources :users, only: %i[show]
+        resources :stages, only: %i[index show]
+        resources :rounds, only: %i[index show]
+        resources :card_sets, only: %i[index show]
+        resources :deckbuilding_restrictions, only: %i[index show]
+        resources :formats, only: %i[index show]
+        resources :identities, only: %i[index show]
+        resources :official_prize_kits, only: %i[index show]
+        resources :players, only: %i[index show]
       end
     end
   end
 
   namespace :beta do
+    get '/', to: '/beta#index'
+    get :help
     post :set_beta
     resources :tournaments do
+      get 'type/:type_id', to: 'tournaments#type', on: :collection
       resources :rounds, only: %i[index show create destroy] do
         resources :pairings, only: %i[index create destroy] do
           get :match_slips, on: :collection
@@ -35,16 +46,19 @@ Rails.application.routes.draw do
         patch :update_timer, on: :member
         get :pairings_data, on: :collection
       end
-      resources :players, only: %i[index create update destroy] do
+      resources :players, only: %i[index show create update destroy] do
         get :players_data, on: :collection
         get 'by_user_id/:user_id', to: 'players#by_user_id', on: :collection
+        get :registration, on: :member
         patch :lock_registration, on: :member
         patch :unlock_registration, on: :member
         patch :drop, on: :member
         patch :reinstate, on: :member
         get :decks, on: :collection
+        get :decks, on: :member
       end
       get :qr, on: :member
+      get :registration, on: :member
       resources :stages, only: %i[create destroy]
       patch :open_registration, on: :member
       patch :close_registration, on: :member
@@ -56,7 +70,6 @@ Rails.application.routes.draw do
       get :cut_conversion_rates, on: :member
     end
     resources :identities, only: [:index]
-    get :help
   end
 
   resources :tournaments do
@@ -88,6 +101,7 @@ Rails.application.routes.draw do
       patch :update_timer, on: :member
       get :view_pairings, on: :collection
       get :pairings_data, on: :collection
+      get 'pairings_data(/:user_id)', on: :collection, action: 'pairings_data'
       get :brackets, on: :collection
     end
     get :bracket, on: :member

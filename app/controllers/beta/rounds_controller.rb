@@ -170,34 +170,6 @@ module Beta
           self_reports = self_reports.select { |r| r['report_player_id'] == current_user.id }
         end
 
-        # TODO: Move label logic and score_label() to FE
-        if self_reports&.any? && @tournament.user != current_user
-          if stage.single_sided? && side == 'player1_is_corp'
-            self_reports.each do |r|
-              r[:label] = score_label(@tournament.swiss_format,
-                                      player1_side(side),
-                                      r['score1'],
-                                      r['score1_corp'],
-                                      r['score1_runner'],
-                                      r['score2'],
-                                      r['score2_corp'],
-                                      r['score2_runner'])
-            end
-          else
-            # Player 2 is the corp (left side) player
-            self_reports.each do |r|
-              r[:label] = score_label(@tournament.swiss_format,
-                                      player2_side(side),
-                                      r['score2'],
-                                      r['score2_corp'],
-                                      r['score2_runner'],
-                                      r['score1'],
-                                      r['score1_corp'],
-                                      r['score1_runner'])
-            end
-          end
-        end
-
         pairings << {
           id:,
           table_number:,
@@ -291,7 +263,7 @@ module Beta
 
     def score_label(swiss_format, player1_side, score1, score1_corp, score1_runner, score2, score2_corp, score2_runner) # rubocop:disable Metrics/ParameterLists
       # No scores reported.
-      return '-' if score1 == 0 && score2 == 0 # rubocop:disable Style/NumericPredicate
+      return '-' if score1&.zero? && score2&.zero?
 
       ws = winning_side(score1_corp, score1_runner, score2_corp, score2_runner)
 

@@ -16,15 +16,15 @@ RSpec.describe 'listing my tournaments', type: :feature do
     end
 
     it 'shows my public tournaments' do
-      expect(page).to have_content('Some Tournament')
+      expect(page).to have_text('Some Tournament')
     end
 
     it 'shows my private tournaments' do
-      expect(page).to have_content('Private Tournament')
+      expect(page).to have_text('Private Tournament')
     end
 
     it 'does not show other user\'s tournaments' do
-      expect(page).to have_no_content('Not My Tournament')
+      expect(page).to have_no_text('Not My Tournament')
     end
   end
 

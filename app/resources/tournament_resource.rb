@@ -4,7 +4,7 @@
 class TournamentResource < ApplicationResource
   primary_endpoint '/tournaments', %i[index show]
 
-  self.default_page_size = 3
+  self.default_page_size = 25
 
   attribute :id, :integer
   attribute :name, :string
@@ -66,7 +66,13 @@ class TournamentResource < ApplicationResource
   attribute :updated_at, :datetime
 
   belongs_to :tournament_type
+  belongs_to :card_set
+  belongs_to :deckbuilding_restriction
+  belongs_to :format
+  belongs_to :official_prize_kit
   belongs_to :user
+  has_many :stages
+  has_many :rounds
 
   def create_timestamp(date, time_24h, timezone)
     return nil if date.nil? || time_24h.nil? || timezone.nil?

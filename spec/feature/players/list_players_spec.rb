@@ -41,7 +41,7 @@ RSpec.describe 'Listing players', type: :feature do
 
     it 'redirects away' do
       expect(page).to have_current_path(root_path, ignore_query: true)
-      expect(page).to have_content("Sorry, you can't do that")
+      expect(page).to have_text("Sorry, you can't do that")
     end
   end
 end

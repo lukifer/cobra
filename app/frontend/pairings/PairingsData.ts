@@ -53,16 +53,23 @@ declare const Routes: {
 
 export async function loadPairings(
   tournamentId: number,
-): Promise<PairingsData> {
+  userId: number | null = null,
+) {
   const betaEnabledCookie = await cookieStore.get("beta_enabled");
-  const response = await fetch(
-    betaEnabledCookie?.value === "true"
-      ? Routes.pairings_data_beta_tournament_rounds_path(tournamentId)
-      : Routes.pairings_data_tournament_rounds_path(tournamentId),
-    {
-      method: "GET",
-    },
-  );
+
+  let url = "";
+  if (userId) {
+    url = `/tournaments/${tournamentId}/rounds/pairings_data/${userId}`;
+  } else {
+    url =
+      betaEnabledCookie?.value === "true"
+        ? Routes.pairings_data_beta_tournament_rounds_path(tournamentId)
+        : Routes.pairings_data_tournament_rounds_path(tournamentId);
+  }
+
+  const response = await fetch(url, {
+    method: "GET",
+  });
 
   const data = (await response.json()) as PairingsData;
   globalMessages.warnings = data.warnings ?? [];

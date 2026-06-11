@@ -15,9 +15,9 @@ RSpec.describe 'show player meeting', type: :feature do
     click_link 'Player meeting'
 
     aggregate_failures do
-      expect(page).to have_content('1CrackleJack')
-      expect(page).to have_content('2JillPop')
-      expect(page).to have_content('3Snap')
+      expect(page).to have_text('1CrackleJack')
+      expect(page).to have_text('2JillPop')
+      expect(page).to have_text('3Snap')
     end
   end
 
@@ -32,8 +32,8 @@ RSpec.describe 'show player meeting', type: :feature do
     click_link 'Player meeting'
 
     aggregate_failures do
-      expect(page).to have_content('1alanBen')
-      expect(page).to have_content('2callumDavid')
+      expect(page).to have_text('1alanBen')
+      expect(page).to have_text('2callumDavid')
     end
   end
 end

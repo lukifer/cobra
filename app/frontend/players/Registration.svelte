@@ -1,266 +1,366 @@
 <script lang="ts">
-  import Identity from "../identities/Identity.svelte";
-  import type { Tournament } from "../tournaments/TournamentSettings";
-  import FontAwesomeIcon from "../widgets/FontAwesomeIcon.svelte";
-  import IdentitySelect from "../widgets/IdentitySelect.svelte";
-  import { Player, savePlayer as savePlayerRequest } from "./PlayersData";
-  import {
-    loadIdentityNames,
-    type IdentityNames,
-  } from "../identities/Identity";
   import { onMount } from "svelte";
+  import GlobalMessages from "../widgets/GlobalMessages.svelte";
+  import {
+    loadTournament,
+    Tournament,
+  } from "../tournaments/TournamentSettings";
+  import { loadPlayer, Player } from "./PlayersData";
+  import FontAwesomeIcon from "../widgets/FontAwesomeIcon.svelte";
+  import ProgressButton from "../widgets/ProgressButton.svelte";
+  import {
+    type NrdbDeck,
+    Deck,
+    convertNrdbDeck,
+    getPrintings,
+  } from "../utils/decks.svelte";
+  import { loadDecks, savePlayer } from "../players/PlayersData";
+  import DeckDisplay from "./DeckDisplay.svelte";
 
   let {
-    userId,
-    tournament,
-    player,
+    tournamentId,
+    playerId,
+    nrdbDecks,
   }: {
-    userId: number;
-    tournament: Tournament;
-    player: Player;
+    tournamentId: number;
+    playerId: number;
+    nrdbDecks: NrdbDeck[];
   } = $props();
 
-  let identityNames: IdentityNames | undefined = $state();
-  // svelte-ignore state_referenced_locally
-  let playerEdit = $state($state.snapshot(player));
-  let playerAgreed = $state(false);
-  let readOnly = $derived(playerEdit.id !== 0);
+  const THE_CATALYST_NRDB_CODE = "30076";
+  const THE_SYNDICATE_NRDB_CODE = "30077";
+
+  let tournament = $state<Tournament | undefined>();
+  let player = $state<Player | null>(null);
+  let decks = $state<Deck[] | null>(null);
+  let tournamentDecks = $state<Deck[]>();
+  let originalCorpDeck = $state(new Deck());
+  let corpDeck = $state(new Deck());
+  let originalRunnerDeck = $state(new Deck());
+  let runnerDeck = $state(new Deck());
+  let editMode = $state(
+    new URLSearchParams(document.location.search).get("edit") === "true",
+  );
+  let editing = $state(false);
 
   onMount(async () => {
-    identityNames = await loadIdentityNames();
-    playerEdit.name = player.name;
+    [tournament, player] = await Promise.all([
+      loadTournament(tournamentId),
+      loadPlayer(tournamentId, playerId),
+    ]);
+
+    await loadTournamentDecks();
+
+    // Load printings and convert NrdbDecks to Decks
+    if (nrdbDecks.length > 0) {
+      const printings = await getPrintings();
+      if (printings.size > 0) {
+        decks = nrdbDecks.map((d) => convertNrdbDeck(d, printings));
+      }
+    }
   });
 
-  async function savePlayer() {
-    playerEdit = await savePlayerRequest(tournament.id, playerEdit);
-    readOnly = true;
+  async function loadTournamentDecks() {
+    if (!player) {
+      return;
+    }
+
+    tournamentDecks = await loadDecks(tournamentId, player.id);
+    originalCorpDeck =
+      tournamentDecks.find((d) => d.details.side_id === "corp") ?? new Deck();
+    originalRunnerDeck =
+      tournamentDecks.find((d) => d.details.side_id === "runner") ?? new Deck();
+    resetEditDecks();
+  }
+
+  function toggleEditing() {
+    editing = !editing;
+    resetEditDecks();
+  }
+
+  function resetEditDecks() {
+    corpDeck = $state.snapshot(originalCorpDeck);
+    runnerDeck = $state.snapshot(originalRunnerDeck);
+  }
+
+  async function save() {
+    if (!player) {
+      return true;
+    }
+
+    player.corp_deck = corpDeck;
+    player.corp_id = {
+      name: corpDeck.details.identity_title ?? "",
+      faction: corpDeck.details.faction_id,
+    };
+    player.runner_deck = runnerDeck;
+    player.runner_id = {
+      name: runnerDeck.details.identity_title ?? "",
+      faction: runnerDeck.details.faction_id,
+    };
+    player = await savePlayer(
+      tournamentId,
+      player,
+      tournament && player.user_id !== tournament.user_id,
+    );
+
+    await loadTournamentDecks();
+    toggleEditing();
+
+    return true;
+  }
+
+  function selectDeck(deck: Deck, isCorp: boolean) {
+    if (isCorp) {
+      originalCorpDeck =
+        deck.details.nrdb_uuid === originalCorpDeck.details.nrdb_uuid
+          ? new Deck()
+          : deck;
+    } else {
+      originalRunnerDeck =
+        deck.details.nrdb_uuid === originalRunnerDeck.details.nrdb_uuid
+          ? new Deck()
+          : deck;
+    }
+    resetEditDecks();
   }
 </script>
 
-{#if readOnly}
-  <div class="card">
-    <div class="card-header d-flex justify-content-between">
-      <h5 class="mb-0">My Registration Information</h5>
+<GlobalMessages />
 
-      {#if tournament.nrdb_deck_registration}
-        <a href={`/tournaments/${tournament.id}/registration`}>
-          <FontAwesomeIcon icon="edit" />
-          Edit
-        </a>
-      {:else}
-        <button
-          type="button"
-          class="btn btn-link text-info p-0"
-          onclick={() => {
-            readOnly = false;
-          }}
-        >
-          <FontAwesomeIcon icon="edit" />
-          Edit
-        </button>
-      {/if}
-    </div>
-    <ul class="list-group list-group-flush">
-      <li class="list-group-item">
-        <div class="small text-secondary">Name:</div>
-        <div aria-label="name">
-          {playerEdit.name_with_pronouns}
+{#snippet deckListItem(deck: Deck, isCorp: boolean)}
+  <button
+    class="list-group-item list-group-item-action {deck.details.nrdb_uuid ===
+    (isCorp
+      ? originalCorpDeck.details.nrdb_uuid
+      : originalRunnerDeck.details.nrdb_uuid)
+      ? 'active'
+      : ''}"
+    onclick={() => {
+      selectDeck(deck, isCorp);
+    }}
+  >
+    <div
+      class="deck-list-identity"
+      style={`background-image:url(https://card-images.netrunnerdb.com/v2/small/${deck.details.identity_nrdb_printing_id}.jpg)`}
+    ></div>
+    <p class="mb-1">{deck.details.name}</p>
+    <small>{deck.details.identity_title}</small>
+  </button>
+{/snippet}
+
+{#snippet decksList(isCorp: boolean, selectedDeck: Deck | null)}
+  {#if decks !== null}
+    <ul class="list-group list-group-flush" style="border-bottom: 0;">
+      <li class="list-group-item selected-deck">
+        <div class="selected-deck-buttons">
+          {#if selectedDeck}
+            <button
+              type="button"
+              title="Deselect"
+              class="btn btn-link p-0"
+              onclick={() => {
+                selectDeck(new Deck(), isCorp);
+              }}
+            >
+              <FontAwesomeIcon icon="close" />
+            </button>
+          {/if}
         </div>
-      </li>
-      <li class="list-group-item">
-        <div class="small text-secondary">Corp ID:</div>
-        <div aria-label="corp ID">
-          <Identity
-            identity={playerEdit.corp_id}
-            name_if_missing="Unspecified"
-            icon_if_missing="interrupt"
-          />
-        </div>
-      </li>
-      <li class="list-group-item">
-        <div class="small text-secondary">Runner ID:</div>
-        <div aria-label="runner ID">
-          <Identity
-            identity={playerEdit.runner_id}
-            name_if_missing="Unspecified"
-            icon_if_missing="interrupt"
-          />
-        </div>
-      </li>
-      <li class="list-group-item">
-        <div class="small text-secondary">First Round Bye:</div>
-        {#if playerEdit.first_round_bye}
-          <div class="badge badge-success" aria-label="first round bye">
-            YES
-          </div>
+        {#if selectedDeck}
+          <div
+            class="selected-deck-identity"
+            style={`background-image:url(https://card-images.netrunnerdb.com/v2/small/${selectedDeck.details.identity_nrdb_printing_id}.jpg)`}
+          ></div>
+          <p class="mb-1">{selectedDeck.details.name}</p>
         {:else}
-          <div class="badge badge-secondary" aria-label="first round bye">
-            NO
-          </div>
-        {/if}
-      </li>
-      <li class="list-group-item">
-        <div class="small text-secondary">Stream my games:</div>
-        {#if playerEdit.include_in_stream}
-          <div class="badge badge-success" aria-label="stream my games">
-            YES
-          </div>
-        {:else}
-          <div class="badge badge-secondary" aria-label="stream my games">
-            NO
-          </div>
+          <div
+            class="selected-deck-identity"
+            style={`background-image:url(https://card-images.netrunnerdb.com/v2/small/${isCorp ? THE_SYNDICATE_NRDB_CODE : THE_CATALYST_NRDB_CODE}.jpg)`}
+          ></div>
+          <p class="mb-1">
+            {isCorp ? "No corp selected" : "No runner selected"}
+          </p>
         {/if}
       </li>
     </ul>
-  </div>
-{:else}
-  <div class="card alert alert-secondary">
-    <div class="card-header d-flex justify-content-between">
-      <h5 class="mb-0">
-        {#if playerEdit.id === 0}
-          Register for this Event
-        {:else}
-          My Registration Information
-        {/if}
-      </h5>
+    <ul class="list-group list-group-flush overflow-auto" style="height: 24em;">
+      {#each decks.filter((d) => d.details.side_id === (isCorp ? "corp" : "runner")) as deck (deck.details.id)}
+        <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -->
+        {@render deckListItem(deck, isCorp)}
+      {/each}
+    </ul>
+  {/if}
+{/snippet}
 
-      {#if playerEdit.id !== 0}
-        <button
-          type="button"
-          class="btn btn-link text-info p-0"
-          onclick={() => {
-            readOnly = true;
-          }}
-        >
-          <FontAwesomeIcon icon="undo" />
-          Cancel
-        </button>
-      {/if}
+{#if player && player.id !== 0 && tournament}
+  <!-- General registration information -->
+  <div class="card mb-3">
+    <div class="card-header">
+      <div class="d-flex justify-content-between">
+        <h5 class="mb-0">My Registration Information</h5>
+        <span class="float-right dontprint">
+          <button
+            type="button"
+            class="btn btn-link p-0 mr-3"
+            title="Print"
+            onclick={() => {
+              window.print();
+            }}
+          >
+            <FontAwesomeIcon icon="print" />
+          </button>
+          <a
+            href={editMode
+              ? `/beta/tournaments/${tournamentId}/rounds`
+              : `/beta/tournaments/${tournamentId}`}
+            class="btn btn-link p-0"
+            title="Cancel"
+          >
+            <FontAwesomeIcon icon="undo" />
+          </a>
+        </span>
+      </div>
     </div>
 
-    <div class="identities_form d-block">
-      <div class="form-group">
-        <label class="d-block" for="name">Name</label>
-        <input
-          id="name"
-          type="text"
-          placeholder="Enter your name"
-          class="form-control"
-          bind:value={playerEdit.name}
-        />
+    <div class="card-body">
+      <div class="identities_form form-row">
+        <!-- Name -->
+        <div class="col-4">
+          <label for="name">Name</label>
+          <input
+            id="name"
+            type="text"
+            class="form-control"
+            placeholder="Enter player name"
+            bind:value={player.name}
+          />
+        </div>
+
+        <!-- Pronouns -->
+        <div class="col-4">
+          <label for="pronouns">Pronouns</label>
+          <input
+            id="pronouns"
+            type="text"
+            class="form-control"
+            placeholder="Example: they/them"
+            bind:value={player.pronouns}
+          />
+        </div>
       </div>
 
-      <div class="form-group">
-        <label class="d-block" for="pronouns">Pronouns</label>
-        <input
-          id="pronouns"
-          type="text"
-          placeholder="Example: they/them"
-          class="form-control"
-          bind:value={playerEdit.pronouns}
-        />
-      </div>
-
-      {#if !tournament.nrdb_deck_registration}
-        <div class="form-group">
-          <label class="d-block" for="corp-identity">Corp ID</label>
-          <IdentitySelect
-            id="corp-identity"
-            placeholder="Search for corp ID"
-            identityNames={identityNames ? identityNames.corp : []}
-            bind:value={playerEdit.corp_id.name}
-          />
-        </div>
-
-        <div class="form-group">
-          <label class="d-block" for="runner-identity">Runner ID</label>
-          <IdentitySelect
-            id="runner-identity"
-            placeholder="Search for runner ID"
-            identityNames={identityNames ? identityNames.runner : []}
-            bind:value={playerEdit.runner_id.name}
-          />
-        </div>
-      {/if}
-
-      {#if tournament.allow_streaming_opt_out}
-        <div class="form-group">
-          <label for="include_in_stream">
-            Should we include your games in video coverage of this event? Note:
-            During a top cut it may not be possible to exclude you from
-            coverage.
-          </label>
-          <input
-            id="include_in_stream"
-            type="checkbox"
-            bind:checked={playerEdit.include_in_stream}
-          />
-          <label for="include_in_stream">
-            Include my games in video coverage
-          </label>
-        </div>
-      {/if}
-
-      {#if userId === tournament.user_id}
-        <div class="form-group">
-          <input
-            id="first_round_bye"
-            type="checkbox"
-            bind:checked={playerEdit.first_round_bye}
-          />
-          <label for="first_round_bye">First Round Bye</label>
-        </div>
-
-        {#if tournament.manual_seed}
-          <div class="form-group">
-            <label class="d-block" for="manual_seed">Manual Seed</label>
+      <div class="form-row mt-2">
+        <!-- Streaming opt-out -->
+        {#if tournament.allow_streaming_opt_out}
+          <div class="col-4 form-check form-check-inline">
             <input
-              id="manual_seed"
-              type="number"
-              placeholder="Set seed"
-              class="form-control"
-              bind:value={playerEdit.manual_seed}
+              id="include_in_stream"
+              type="checkbox"
+              class="form-check-input"
+              bind:checked={player.include_in_stream}
             />
+            <label for="include_in_stream" class="form-check-label">
+              Video coverage allowed
+            </label>
           </div>
         {/if}
-      {/if}
+      </div>
 
-      {#if playerEdit.id === 0}
-        <hr />
-
-        <div class="form-group">
-          <label for="consent_data_sharing">
-            Your name, pronouns and Netrunner deck identities will be publicly
-            visible on this website. If you submit decklists they will be shared
-            with the organiser. If you enter a round with open decklists, they
-            may be shared with participants or made public.
-          </label>
-          <input
-            id="consent_data_sharing"
-            type="checkbox"
-            bind:checked={playerAgreed}
-          />
-          <label for="consent_data_sharing">I agree to these terms</label>
-        </div>
-      {/if}
-    </div>
-
-    <div class="text-right">
-      <button
-        type="button"
-        class="btn btn-primary"
-        disabled={playerEdit.id === 0 && !playerAgreed}
-        onclick={savePlayer}
-      >
-        <FontAwesomeIcon icon="user-plus" />
-        {#if playerEdit.id !== 0}
-          Submit
-        {:else if tournament.nrdb_deck_registration}
-          Deck Registration
-        {:else}
-          Register
+      <div class="dontprint mt-sm-2">
+        {#if editMode}
+          <div class="float-left">
+            {#if editing}
+              <button
+                type="button"
+                class="btn btn-link"
+                onclick={toggleEditing}
+              >
+                <FontAwesomeIcon icon="undo" />
+                Cancel edits
+              </button>
+            {:else}
+              <a
+                href="/beta/tournaments/{tournamentId}/registration"
+                class="btn btn-link"
+              >
+                <FontAwesomeIcon icon="edit" />
+                Choose decks from your NetrunnerDB account
+              </a>
+              <button
+                type="button"
+                class="btn btn-link"
+                onclick={toggleEditing}
+              >
+                <FontAwesomeIcon icon="edit" />
+                Edit decks in place
+              </button>
+            {/if}
+          </div>
         {/if}
-      </button>
+
+        <div class="float-right">
+          <!-- Create/Save -->
+          <ProgressButton
+            css="btn btn-success"
+            inProgressText="Saving"
+            completeText="Saved"
+            onclick={save}
+          >
+            <FontAwesomeIcon icon="floppy-o" /> Save
+          </ProgressButton>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <div class="alert alert-danger dontprint">
+    <FontAwesomeIcon icon="exclamation-triangle" /> Deck legality is not yet checked.
+    Please ensure your decks are legal.
+  </div>
+
+  <!-- Deck selection -->
+  {#if !editMode}
+    <div class="alert alert-secondary dontprint">
+      Please select from your decks below. <a
+        href="https://netrunnerdb.com/en/decks"
+        target="_blank">See your decks in NetrunnerDB</a
+      >. Refresh the page to reload from NetrunnerDB.
+    </div>
+
+    <div class="row mb-3 justify-content-center dontprint">
+      {#if decks !== null}
+        <div class="col-md-6">
+          <div class="card">
+            <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -->
+            {@render decksList(true, corpDeck)}
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card">
+            <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -->
+            {@render decksList(false, runnerDeck)}
+          </div>
+        </div>
+      {:else}
+        <div class="spinner-border m-auto"></div>
+      {/if}
+    </div>
+  {/if}
+
+  <!-- Deck display -->
+  <div class="row">
+    <div class="col-md-6">
+      <DeckDisplay bind:deck={corpDeck} isCorp={true} editMode={editing} />
+    </div>
+
+    <div class="col-md-6">
+      <DeckDisplay bind:deck={runnerDeck} isCorp={false} editMode={editing} />
+    </div>
+  </div>
+{:else}
+  <div class="d-flex align-items-center m-2">
+    <div class="spinner-border m-auto"></div>
   </div>
 {/if}

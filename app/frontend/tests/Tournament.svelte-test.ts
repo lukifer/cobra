@@ -9,19 +9,14 @@ import {
 import Tournament from "../tournaments/Tournament.svelte";
 import { MockIdentityNames, MockTournament } from "./TournamentTestData";
 import { MockPlayerBob } from "./RoundsTestData";
-import {
-  loadPlayer,
-  loadQRCode,
-  loadTournament,
-} from "../tournaments/TournamentSettings";
+import { loadQRCode, loadTournament } from "../tournaments/TournamentSettings";
 import { loadIdentityNames } from "../identities/Identity";
 import userEvent from "@testing-library/user-event";
-import { Player, savePlayer } from "../players/PlayersData";
+import { loadPlayerByUserId, Player, savePlayer } from "../players/PlayersData";
 
 vi.mock("../tournaments/TournamentSettings", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../pairings/PairingsData")>()),
   loadTournament: vi.fn(() => MockTournament),
-  loadPlayer: vi.fn(() => MockPlayerBob),
   loadQRCode: vi.fn(() => null),
 }));
 
@@ -32,20 +27,21 @@ vi.mock("../identities/Identity", async (importOriginal) => ({
 
 vi.mock("../players/PlayersData", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../pairings/PairingsData")>()),
+  loadPlayerByUserId: vi.fn(() => MockPlayerBob),
   savePlayer: vi.fn(() => true),
 }));
 
 const user = userEvent.setup();
 
 describe("Tournament", () => {
-  async function renderTournament(userId: number) {
-    render(Tournament, { tournamentId: 1, userId: userId });
+  async function renderTournament(userId: number, userName?: string) {
+    render(Tournament, { tournamentId: 1, userId: userId, userName: userName });
 
     await waitFor(() => {
       expect(loadTournament).toHaveBeenCalledOnce();
     });
     await waitFor(() => {
-      expect(loadPlayer).toHaveBeenCalledOnce();
+      expect(loadPlayerByUserId).toHaveBeenCalledOnce();
     });
     await waitFor(() => {
       expect(loadQRCode).toHaveBeenCalledOnce();
@@ -75,7 +71,7 @@ describe("Tournament", () => {
 
   describe("when player is logged out", () => {
     beforeEach(() => {
-      vi.mocked(loadPlayer).mockImplementation(() =>
+      vi.mocked(loadPlayerByUserId).mockImplementation(() =>
         Promise.resolve(new Player()),
       );
     });
@@ -143,13 +139,23 @@ describe("Tournament", () => {
   describe("when player is logged in", () => {
     describe("when player is not registered", () => {
       beforeEach(async () => {
-        vi.mocked(loadPlayer).mockImplementation(() =>
+        vi.mocked(loadPlayerByUserId).mockImplementation(() =>
           Promise.resolve(new Player()),
         );
-        await renderTournament(2);
+
+        await renderTournament(MockPlayerBob.id, MockPlayerBob.name);
         await waitFor(() => {
           expect(loadIdentityNames).toHaveBeenCalledOnce();
         });
+      });
+
+      it("displays the user's name before registration", () => {
+        expect(
+          getByLabelText(
+            screen.getByLabelText("registration information"),
+            "Name",
+          ),
+        ).toHaveValue("Bob");
       });
 
       it("allows registration", async () => {
@@ -157,6 +163,7 @@ describe("Tournament", () => {
           "registration information",
         );
 
+        await user.clear(getByLabelText(registrationCard, "Name"));
         await user.type(getByLabelText(registrationCard, "Name"), "Bob Again");
         await user.type(
           getByLabelText(registrationCard, "Pronouns"),

@@ -1,24 +1,56 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { SharingData } from "./PairingsData";
-  import { loadSharingData } from "./PairingsData";
   import SharePage from "./SharePage.svelte";
   import FontAwesomeIcon from "../widgets/FontAwesomeIcon.svelte";
+  import { loadRound, type RoundData } from "./RoundData";
+  import type { Player } from "../players/PlayersData";
 
-  interface Props {
+  let {
+    tournamentId,
+    roundId,
+  }: {
     tournamentId: number;
     roundId: number;
-  }
+  } = $props();
 
-  let { tournamentId, roundId }: Props = $props();
+  const MAX_MARKDOWN_PAGE_LENGTH = 2000;  // Break things up roughly around the Discord message limit.
 
-  let data = $state(new SharingData());
   let betaEnabledCookie: CookieListItem | null = $state(null);
+  let data: RoundData | undefined = $state();
+  let markdownPages: string[] = $state([]);
 
   onMount(async () => {
-    data = await loadSharingData(tournamentId, roundId);
     betaEnabledCookie = await cookieStore.get("beta_enabled");
+    data = await loadRound(tournamentId, roundId);
+
+    // Build markdown pages
+    const pageHeader = `# ${data.stage.format} - Round ${data.round.number} Pairings`;
+    let currentPage = pageHeader;
+    for (const pairing of data.round.pairings) {
+      let tableMarkdown = `\n### Table ${pairing.table_number}`;
+      tableMarkdown += `\n- ${pairingPlayerMarkdown(pairing.player1, data.stage.is_single_sided)}`;
+      tableMarkdown += `\n- ${pairingPlayerMarkdown(pairing.player2, data.stage.is_single_sided)}`;
+
+      if (
+        currentPage.length + tableMarkdown.length >=
+        MAX_MARKDOWN_PAGE_LENGTH
+      ) {
+        markdownPages.push(currentPage);
+        currentPage = pageHeader;
+      }
+
+      currentPage += tableMarkdown;
+    }
+    markdownPages.push(currentPage);
   });
+
+  function pairingPlayerMarkdown(player: Player, isSingleSided: boolean) {
+    let markdown = `**${player.name_with_pronouns}**`;
+    if (isSingleSided) {
+      markdown += ` - ${player.side_label}`;
+    }
+    return markdown;
+  }
 </script>
 
 <p>
@@ -35,8 +67,8 @@
 {#if data}
   <h2>Export Pairings as Markdown</h2>
 
-  {#each data.pages as text, i (i)}
-    <div class="mb-3">
+  {#each markdownPages as text, i (i)}
+    <div style="margin-bottom: 2rem">
       <SharePage {text} page={i + 1} />
     </div>
   {/each}

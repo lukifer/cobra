@@ -226,7 +226,11 @@
         <SelfReportOptions {stage} {pairing} {reportScoreCallback} />
       {/if}
       {#if pairing.self_reports && pairing.self_reports.length !== 0}
-        Report: {pairing.self_reports[0].label}
+        Report: {readableReportScore(
+          pairing.self_reports[0],
+          pairing.player1.side,
+          stage.is_single_sided,
+        )}
       {/if}
     </div>
   {/if}

@@ -20,6 +20,11 @@ export default ts.config(
         "error",
         { allowNumber: true },
       ],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { ignoreRestSiblings: true },
+      ],
+      "eol-last": ["error", "always"],
     },
   },
   {

@@ -12,7 +12,7 @@ RSpec.describe 'cutting tournament', type: :feature do
       end
 
       it 'does not display link' do
-        expect(page).to have_no_content('Cut to Top')
+        expect(page).to have_no_text('Cut to Top')
       end
     end
   end

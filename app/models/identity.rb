@@ -3,6 +3,17 @@
 class Identity < ApplicationRecord # rubocop:disable Style/Documentation
   enum :side, { corp: 1, runner: 2 }
 
+  scope :deduplicated, lambda {
+    from(
+      "(WITH ranked_rows AS (
+         SELECT *,
+                DENSE_RANK() OVER (PARTITION BY name ORDER BY nrdb_code DESC) as ranking
+         FROM identities
+       )
+       SELECT * FROM ranked_rows WHERE ranking = 1) identities"
+    )
+  }
+
   ALIASES = {
     ci: '03001',
     gabe: '20019',

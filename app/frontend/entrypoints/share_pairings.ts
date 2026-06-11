@@ -1,10 +1,10 @@
 import { mount } from "svelte";
-import StageSettings from "../pairings/Share.svelte";
+import Share from "../pairings/Share.svelte";
 
 document.addEventListener("turbolinks:load", function () {
   const anchor = document.getElementById("share_pairings_anchor");
   if (anchor?.childNodes.length === 0) {
-    mount(StageSettings, {
+    mount(Share, {
       target: anchor,
       props: {
         tournamentId:

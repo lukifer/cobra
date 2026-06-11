@@ -3,13 +3,23 @@
 module Beta
   class TournamentsController < ApplicationController # rubocop:disable Metrics/ClassLength,Style/Documentation
     before_action :set_tournament, only: %i[
-      show update qr open_registration close_registration lock_player_registrations unlock_player_registrations
-      cut stats id_and_faction_data cut_conversion_rates
+      show update qr registration open_registration close_registration lock_player_registrations
+      unlock_player_registrations cut stats id_and_faction_data cut_conversion_rates
     ]
     before_action :authorize_beta_testing
 
+    def index
+      skip_authorization
+      @type_id = nil
+    end
+
     def show
       authorize @tournament
+    end
+
+    def type
+      skip_authorization
+      @type_id = params[:type_id]
     end
 
     def update
@@ -73,6 +83,42 @@ module Beta
                                .as_svg(offset: 0, color: '000', shape_rendering: 'crispEdges', module_size: 25),
                 type: 'image/svg+xml',
                 disposition: 'inline')
+    end
+
+    def registration
+      authorize @tournament, :register?
+
+      players = @tournament.players.includes(%i[corp_identity_ref runner_identity_ref]).active.sort_by do |p|
+        p.name || ''
+      end
+      @current_user_player = players.find do |p|
+        p.user_id == current_user.id
+      end
+      unless @current_user_player
+        redirect_to tournament_path(@tournament)
+        return
+      end
+
+      return unless @tournament.nrdb_deck_registration?
+      return if @current_user_player.registration_locked?
+
+      begin
+        @decks = Nrdb::Connection.new(current_user).decks.map do |deck|
+          {
+            id: deck[:id],
+            uuid: deck[:uuid],
+            date_creation: deck[:date_creation],
+            date_update: deck[:date_update],
+            name: deck[:name],
+            description: deck[:description],
+            mwl_code: deck[:mwl_code],
+            tags: deck[:tags],
+            cards: deck[:cards].map { |id, count| { id:, count: } }
+          }
+        end
+      rescue StandardError
+        redirect_to login_path(return_to: request.path)
+      end
     end
 
     def open_registration

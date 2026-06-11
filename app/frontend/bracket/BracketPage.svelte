@@ -6,8 +6,8 @@
   import FontAwesomeIcon from "../widgets/FontAwesomeIcon.svelte";
   import { showIdentities } from "../utils/ShowIdentities";
 
-  export let tournamentId: number;
-  let data: BracketData;
+  let { tournamentId }: { tournamentId: number } = $props();
+  let data = $state<BracketData | undefined>(undefined);
 
   onMount(async () => {
     data = await loadBrackets(tournamentId);
@@ -19,7 +19,7 @@
 </script>
 
 <div class="d-flex gap-2 align-items-center mb-2">
-  <button class="btn btn-primary" on:click={toggleIdentities}>
+  <button class="btn btn-primary" onclick={toggleIdentities}>
     <FontAwesomeIcon icon="eye-slash" />
     Show/hide identities
   </button>

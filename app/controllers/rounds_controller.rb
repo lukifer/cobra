@@ -28,7 +28,7 @@ class RoundsController < ApplicationController # rubocop:disable Metrics/ClassLe
         custom_table_numbering: Flipper.enabled?(:custom_table_numbering, current_user)
       },
       tournament: helpers.tournament_json(@tournament),
-      stages: pairings_data_stages,
+      stages: pairings_data_stages(params[:user_id]&.to_i),
       warnings: ([@tournament.current_stage&.validate_table_count] if policy(@tournament).update?)
     }
   end
@@ -155,7 +155,7 @@ class RoundsController < ApplicationController # rubocop:disable Metrics/ClassLe
     params.require(:round).permit(:weight)
   end
 
-  def pairings_data_stages
+  def pairings_data_stages(user_id = nil)
     players = pairings_data_players
     @tournament.stages.includes(:rounds, :registrations).map do |stage|
       stage_players = pairings_data_players_with_seeds(players, stage)
@@ -166,7 +166,7 @@ class RoundsController < ApplicationController # rubocop:disable Metrics/ClassLe
         is_single_sided: stage.single_sided?,
         is_elimination: stage.elimination?,
         view_decks: stage.decks_visible_to?(current_user),
-        rounds: pairings_data_rounds(stage, stage_players),
+        rounds: pairings_data_rounds(stage, stage_players, user_id),
         player_count: stage.players.count
       }
     end
@@ -204,7 +204,7 @@ class RoundsController < ApplicationController # rubocop:disable Metrics/ClassLe
     players
   end
 
-  def pairings_data_rounds(stage, players)
+  def pairings_data_rounds(stage, players, user_id = nil)
     self_reports_by_pairing_id = SelfReport.joins(pairing: :round)
                                            .where(rounds: { stage_id: stage.id })
                                            .group_by(&:pairing_id)
@@ -215,18 +215,27 @@ class RoundsController < ApplicationController # rubocop:disable Metrics/ClassLe
 
     # Get data for all paired rounds
     stage.rounds.map do |round|
-      pairings_data_round(stage, players, round, self_reports_by_pairing_id)
+      pairings_data_round(stage, players, round, self_reports_by_pairing_id, user_id)
     end
   end
 
-  def pairings_data_round(stage, players, round, self_reports_by_pairing_id)
+  def pairings_data_round(stage, players, round, self_reports_by_pairing_id, user_id = nil)
     pairings = []
     pairings_reported = 0
     pairings_fields = %i[id table_number player1_id player2_id side intentional_draw
                          two_for_one score1 score1_corp score1_runner score2 score2_corp score2_runner]
-    round.pairings.order(:table_number).pluck(pairings_fields).each do | # rubocop:disable Metrics/ParameterLists
+    filtered_pairings = round.pairings.order(:table_number)
+    unless user_id.nil?
+      filtered_pairings = filtered_pairings
+                          .joins(:player1, :player2)
+                          .where('players.user_id = ? or player2s_pairings.user_id = ?', user_id, user_id)
+    end
+    filtered_pairings.pluck(pairings_fields).each do | # rubocop:disable Metrics/ParameterLists
     id, table_number, player1_id, player2_id, side, intentional_draw,
       two_for_one, score1, score1_corp, score1_runner, score2, score2_corp, score2_runner|
+      player_1_user_id = players[player1_id]&.dig('user_id')
+      player_2_user_id = players[player2_id]&.dig('user_id')
+
       pairings_reported += score1.nil? && score2.nil? ? 0 : 1
       self_reports = current_user ? self_reports_by_pairing_id[id] : nil
 
@@ -236,7 +245,7 @@ class RoundsController < ApplicationController # rubocop:disable Metrics/ClassLe
       end
 
       # TODO: Move label logic and score_label() to FE
-      if self_reports&.any? && @tournament.user != current_user
+      if self_reports&.any?
         if stage.single_sided? && side == 'player1_is_corp'
           self_reports.each do |r|
             r[:label] = score_label(@tournament.swiss_format,
@@ -270,8 +279,8 @@ class RoundsController < ApplicationController # rubocop:disable Metrics/ClassLe
         policy: {
           self_report: SelfReporting.self_report_allowed(current_user,
                                                          self_reports&.any? ? self_reports[0] : nil,
-                                                         players[player1_id]&.dig('user_id'),
-                                                         players[player2_id]&.dig('user_id')) &&
+                                                         player_1_user_id,
+                                                         player_2_user_id) &&
                        score1.nil? && score2.nil? && @tournament.allow_self_reporting
         },
         # TODO: in future pass current user to svelte frontend
@@ -279,8 +288,7 @@ class RoundsController < ApplicationController # rubocop:disable Metrics/ClassLe
           row_highlighted: if current_user.nil?
                              false
                            else
-                             current_user.id == players[player1_id]&.dig('user_id') ||
-                             current_user.id == players[player2_id]&.dig('user_id')
+                             [player_1_user_id, player_2_user_id].include?(current_user.id)
                            end
         },
         player1: pairings_data_player(players[player1_id], player1_side(side)),
@@ -328,7 +336,7 @@ class RoundsController < ApplicationController # rubocop:disable Metrics/ClassLe
 
   def score_label(swiss_format, player1_side, score1, score1_corp, score1_runner, score2, score2_corp, score2_runner) # rubocop:disable Metrics/ParameterLists
     # No scores reported.
-    return '-' if score1 == 0 && score2 == 0 # rubocop:disable Style/NumericPredicate
+    return '-' if score1&.zero? && score2&.zero?
 
     ws = winning_side(score1_corp, score1_runner, score2_corp, score2_runner)
 

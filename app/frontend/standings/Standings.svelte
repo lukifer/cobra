@@ -10,8 +10,8 @@
   import { loadStandings } from "./StandingsData";
   import SwissStandings from "./SwissStandings.svelte";
 
-  export let tournamentId: number;
-  let data: StandingsData;
+  let { tournamentId }: { tournamentId: number } = $props();
+  let data = $state<StandingsData | undefined>(undefined);
 
   onMount(async () => {
     data = await loadStandings(tournamentId);

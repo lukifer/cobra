@@ -13,6 +13,9 @@ CI.run do
   step 'Tests: Seeds', 'env RAILS_ENV=test bin/rails db:seed:replant'
 
   step 'Tests: System', 'bundle exec rspec'
+
+  step 'Lint: Javascript', 'npm run lint'
+  step 'Lint: Svelte', 'npm run svelte-check'
   step 'Tests: Vite', 'npm run test'
 
   # Optional: set a green GitHub commit status to unblock PR merge.

@@ -4,8 +4,13 @@
   import FontAwesomeIcon from "../widgets/FontAwesomeIcon.svelte";
   import Tooltip from "./Tooltip.svelte";
 
-  export let stage: SwissStage;
-  export let manual_seed: boolean;
+  let {
+    stage,
+    manual_seed,
+  }: {
+    stage: SwissStage;
+    manual_seed: boolean;
+  } = $props();
 
   function printSideBias(sideBias: number | null) {
     if (sideBias == null || sideBias === 0) {
@@ -71,12 +76,12 @@
         {/if}
         <td class="ids">
           <Identity
-            identity={standing.player.corp_id}
+            identity={standing.player.corp_id ?? undefined}
             points={standing.corp_points}
             name_if_missing="Corp"
           />
           <Identity
-            identity={standing.player.runner_id}
+            identity={standing.player.runner_id ?? undefined}
             points={standing.runner_points}
             name_if_missing="Runner"
           />

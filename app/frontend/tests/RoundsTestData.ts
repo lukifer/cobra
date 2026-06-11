@@ -16,7 +16,7 @@ export const MockPlayerAlice: Player = {
   pronouns: "she/her",
   name_with_pronouns: "Alice (she/her)",
   side: null,
-  user_id: 0,
+  user_id: 1,
   side_label: null,
   corp_id: new Identity(),
   runner_id: new Identity(),
@@ -34,7 +34,7 @@ export const MockPlayerBob: Player = {
   pronouns: "he/him",
   name_with_pronouns: "Bob (he/him)",
   side: null,
-  user_id: 0,
+  user_id: 2,
   side_label: null,
   corp_id: {
     name: "BANGUN: When Disaster Strikes",
@@ -148,14 +148,50 @@ export const MockPairingsData: PairingsData = {
   stages: [MockSwissStage],
 };
 
-export const MockSelfReport: ScoreReport = {
+export const MockSelfReportPlayer1Sweep: ScoreReport = {
   report_player_id: 1,
   score1: 6,
   score2: 0,
   intentional_draw: false,
   label: "6 - 0",
-  score1_corp: null,
+  score1_corp: 3,
   score2_corp: null,
+  score1_runner: 3,
+  score2_runner: null,
+};
+
+export const MockSelfReportCorpSplit: ScoreReport = {
+  report_player_id: 1,
+  score1: 3,
+  score2: 3,
+  intentional_draw: false,
+  label: "3 - 3 (C)",
+  score1_corp: 3,
+  score2_corp: 3,
   score1_runner: null,
   score2_runner: null,
+};
+
+export const MockSelfReportRunnerSplit: ScoreReport = {
+  report_player_id: 1,
+  score1: 3,
+  score2: 3,
+  intentional_draw: false,
+  label: "3 - 3 (R)",
+  score1_corp: null,
+  score2_corp: null,
+  score1_runner: 3,
+  score2_runner: 3,
+};
+
+export const MockSelfReportPlayer2Sweep: ScoreReport = {
+  report_player_id: 1,
+  score1: 0,
+  score2: 6,
+  intentional_draw: false,
+  label: "0 - 6",
+  score1_corp: null,
+  score2_corp: 3,
+  score1_runner: null,
+  score2_runner: 3,
 };

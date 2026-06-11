@@ -8,10 +8,10 @@ RSpec.describe 'listing tournaments', type: :feature do
   end
 
   it 'shows the tournaments' do
-    expect(page).to have_content('Some Tournament')
+    expect(page).to have_text('Some Tournament')
   end
 
   it 'does not show private tournaments' do
-    expect(page).to have_no_content('Private Tournament')
+    expect(page).to have_no_text('Private Tournament')
   end
 end

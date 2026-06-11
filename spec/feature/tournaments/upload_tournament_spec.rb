@@ -15,7 +15,7 @@ RSpec.describe 'uploading tournament', type: :feature do
   it 'stores code' do
     click_link 'Upload to Always Be Running'
 
-    expect(page).to have_content('937521')
+    expect(page).to have_text('937521')
     expect(tournament.reload.abr_code).to eq('937521')
   end
 end

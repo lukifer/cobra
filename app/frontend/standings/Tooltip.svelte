@@ -1,18 +1,19 @@
 <!-- TODO: Replace with library or move when used more often. Currently no need for a lib-->
 
 <script lang="ts">
-  export let text = "";
+  import type { Snippet } from "svelte";
+  let { text = "", children }: { text?: string; children?: Snippet } = $props();
 
-  let isHovered = false;
+  let isHovered = $state(false);
 </script>
 
 <div
   role="tooltip"
   class="position-relative"
-  on:mouseenter={() => (isHovered = true)}
-  on:mouseleave={() => (isHovered = false)}
+  onmouseenter={() => (isHovered = true)}
+  onmouseleave={() => (isHovered = false)}
 >
-  <slot />
+  {@render children?.()}
   {#if isHovered}
     <div
       class="position-absolute bg-dark text-white p-1 rounded text-nowrap mb-1"

@@ -9,6 +9,7 @@ class Tournament < ApplicationRecord # rubocop:disable Metrics/ClassLength,Style
   belongs_to :deckbuilding_restriction, optional: true
   belongs_to :official_prize_kit, optional: true
   belongs_to :tournament_type, optional: true
+  belongs_to :card_set, optional: true
 
   scope :public_tournaments, -> { where(private: false) }
 

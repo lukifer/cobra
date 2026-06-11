@@ -15,23 +15,23 @@ RSpec.describe "list today's tournaments", type: :feature do
 
   it "only shows today's tournaments" do
     aggregate_failures do
-      expect(page).to have_no_content('YesterdayGNK')
-      expect(page).to have_content('TodayGNK')
-      expect(page).to have_no_content('TomorrowGNK')
+      expect(page).to have_no_text('YesterdayGNK')
+      expect(page).to have_text('TodayGNK')
+      expect(page).to have_no_text('TomorrowGNK')
     end
   end
 
   it 'does not show private tournaments' do
-    expect(page).to have_no_content('PrivateGNK')
+    expect(page).to have_no_text('PrivateGNK')
   end
 
   it 'links to more tournaments' do
     click_link 'More tournaments'
 
     aggregate_failures do
-      expect(page).to have_content('YesterdayGNK')
-      expect(page).to have_content('TodayGNK')
-      expect(page).to have_content('TomorrowGNK')
+      expect(page).to have_text('YesterdayGNK')
+      expect(page).to have_text('TodayGNK')
+      expect(page).to have_text('TomorrowGNK')
     end
   end
 
@@ -47,7 +47,7 @@ RSpec.describe "list today's tournaments", type: :feature do
       fill_in :slug, with: 'NOSUCH'
       click_button 'Go to tournament'
 
-      expect(page).to have_content("Couldn't find that tournament")
+      expect(page).to have_text("Couldn't find that tournament")
     end
   end
 end

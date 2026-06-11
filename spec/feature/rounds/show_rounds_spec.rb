@@ -9,6 +9,6 @@ RSpec.describe 'showing a round', type: :feature do
   end
 
   it 'is successful' do
-    expect(page).to have_content("Round #{round.number}")
+    expect(page).to have_text("Round #{round.number}")
   end
 end

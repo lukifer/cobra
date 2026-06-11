@@ -75,11 +75,19 @@ FactoryBot.define do
     autocomplete { 'Az McCaffrey: Mechanical Prodigy' }
   end
 
-  factory :id_catalyst, class: 'Identity' do
+  factory :catalyst_original, class: 'Identity' do
     name { 'The Catalyst: Convention Breaker' }
     side { :runner }
     faction { 'neutral-runner' }
     nrdb_code { '30076' }
+    autocomplete { 'The Catalyst: Convention Breaker' }
+  end
+
+  factory :catalyst_reprint, class: 'Identity' do
+    name { 'The Catalyst: Convention Breaker' }
+    side { :runner }
+    faction { 'neutral-runner' }
+    nrdb_code { '35000' }
     autocomplete { 'The Catalyst: Convention Breaker' }
   end
 

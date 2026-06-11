@@ -30,7 +30,7 @@ RSpec.describe 'creating a stage', type: :feature do
     end
 
     it 'creates new stage' do
-      expect(page).to have_no_content('Add Swiss stage')
+      expect(page).to have_no_text('Add Swiss stage')
     end
   end
 end

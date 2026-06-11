@@ -9,6 +9,10 @@ class BetaController < ApplicationController # rubocop:disable Style/Documentati
     redirect_to correct_beta_path(CGI.unescape(params.fetch(:redirect, '/')))
   end
 
+  def index
+    authorize :beta, :beta_testing_enabled?
+  end
+
   def help
     authorize :beta, :beta_testing_enabled?
   end

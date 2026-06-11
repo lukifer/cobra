@@ -13,7 +13,7 @@ html
     nav.navbar.navbar-expand-lg.fixed-top.navbar-dark.dontprint
       .container
         - if Flipper.enabled?(:beta_testing, current_user) && cookies[:beta_enabled] == "true"
-          = link_to "Cobra (BETA)", root_path, class: 'navbar-brand'
+          = link_to "Cobra (BETA)", '/beta', class: 'navbar-brand'
         - else
           = link_to "Cobra", root_path, class: 'navbar-brand'
         button.navbar-toggler type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"
@@ -38,7 +38,7 @@ html
                   | Tournament Types
                 div.dropdown-menu.dropdown-menu-right aria-labelledby="tournamentTypeDropdown"
                   - tournament_types.each do |tournament_type|
-                    = link_to tournaments_by_type_tournaments_path(type_id: tournament_type.id), class: 'dropdown-item' do
+                    = link_to correct_beta_path(tournaments_by_type_tournaments_path(type_id: tournament_type.id)), class: 'dropdown-item' do
                       - if tournament_type.nsg_format
                         i.fa.icon class="icon-nsg"
                         | &nbsp;#{tournament_type.name}

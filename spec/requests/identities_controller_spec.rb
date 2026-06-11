@@ -6,7 +6,7 @@ RSpec.describe IdentitiesController do
       ampere = create(:id_ampere)
       etf = create(:id_etf)
       muslihat = create(:id_muslihat)
-      catalyst = create(:id_catalyst)
+      catalyst = create(:catalyst_original)
 
       get identities_path
 

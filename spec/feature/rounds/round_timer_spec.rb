@@ -12,11 +12,11 @@ RSpec.describe 'round timer', type: :feature do
 
     it 'shows the round timer when started' do
       within(round_timer_form) { click_on 'Start' }
-      expect(page).to have_content(timer_display_message)
+      expect(page).to have_text(timer_display_message)
     end
 
     it 'does not show the round timer if not started' do
-      expect(page).to have_no_content(timer_display_message)
+      expect(page).to have_no_text(timer_display_message)
     end
 
     it 'hides the round timer when reset' do
@@ -24,7 +24,7 @@ RSpec.describe 'round timer', type: :feature do
         click_on 'Start'
         click_on 'Reset'
       end
-      expect(page).to have_no_content(timer_display_message)
+      expect(page).to have_no_text(timer_display_message)
     end
 
     it 'shows the round timer when paused' do
@@ -32,7 +32,7 @@ RSpec.describe 'round timer', type: :feature do
         click_on 'Start'
         click_on 'Pause'
       end
-      expect(find('.alert', text: timer_display_message)).to have_content('(paused)')
+      expect(find('.alert', text: timer_display_message)).to have_text('(paused)')
     end
 
     it 'pauses the round timer automatically when the round is completed' do
@@ -42,7 +42,7 @@ RSpec.describe 'round timer', type: :feature do
       end
       travel_to Time.zone.local(2022, 8, 29, 15, 30)
       click_on 'Complete'
-      expect(page).to have_no_content(timer_display_message)
+      expect(page).to have_no_text(timer_display_message)
       expect(round.timer.state).to have_attributes(paused: true, remaining_seconds: 35 * 60)
     end
 

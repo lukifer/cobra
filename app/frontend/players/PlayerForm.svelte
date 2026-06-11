@@ -247,7 +247,7 @@
   <!-- View decks -->
   {#if tournament.nrdb_deck_registration && playerEdit.id !== 0}
     <a
-      href={`/tournaments/${tournament.id}/players/${playerEdit.id}/registration`}
+      href={`/beta/tournaments/${tournament.id}/players/${playerEdit.id}/registration?edit=true`}
       class="btn btn-link text-info"
     >
       <FontAwesomeIcon icon="eye" />

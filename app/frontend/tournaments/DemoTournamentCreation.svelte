@@ -9,9 +9,9 @@
   } from "./DemoTournamentSettings";
   import DemoTournamentSettingsForm from "./DemoTournamentSettingsForm.svelte";
 
-  let tournament: DemoTournamentSettings;
+  let tournament = $state<DemoTournamentSettings | undefined>(undefined);
   let csrfToken = "";
-  let errors: Errors = {};
+  let errors = $state<Errors>({});
 
   onMount(async () => {
     const data = await loadNewDemoTournament();

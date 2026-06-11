@@ -6,6 +6,6 @@ RSpec.describe 'view help page', type: :feature do
   end
 
   it 'displays help content' do
-    expect(page).to have_content('How to use Cobra')
+    expect(page).to have_text('How to use Cobra')
   end
 end

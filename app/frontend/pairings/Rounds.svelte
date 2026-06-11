@@ -25,7 +25,13 @@
     type ScoreReport,
   } from "./SelfReport";
 
-  let { tournamentId }: { tournamentId: number } = $props();
+  let {
+    tournamentId,
+    classicVersion = false,
+  }: {
+    tournamentId: number;
+    classicVersion?: boolean;
+  } = $props();
 
   let data = $state(new PairingsData());
   let forcePlayerView = $state(false);
@@ -35,12 +41,16 @@
 
   onMount(async () => {
     data = await loadPairings(tournamentId);
-    ctx.showOrganizerView = data.policy.update;
+    ctx.showOrganizerView = !classicVersion && data.policy.update;
   });
 
   function toggleForcePlayerView() {
     forcePlayerView = !forcePlayerView;
     ctx.showOrganizerView = data.policy.update && !forcePlayerView;
+
+    if (classicVersion) {
+      window.location.href = `/tournaments/${tournamentId}/rounds`;
+    }
   }
 
   async function addStage(cutSingleElim?: boolean, cutCount?: number) {

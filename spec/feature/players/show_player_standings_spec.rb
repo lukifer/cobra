@@ -9,6 +9,6 @@ RSpec.describe 'showing player standings', type: :feature do
   end
 
   it 'displays standings' do
-    expect(page).to have_content('Standings')
+    expect(page).to have_text('Standings')
   end
 end

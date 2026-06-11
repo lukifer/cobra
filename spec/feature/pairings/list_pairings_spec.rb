@@ -24,12 +24,12 @@ RSpec.describe 'list pairings for a round', type: :feature do
       click_link 'Pairings by name'
 
       aggregate_failures do
-        expect(page).to have_content('3(Bye)Pop')
-        expect(page).to have_content('2CrackleSnap')
-        expect(page).to have_content('1JackJill')
-        expect(page).to have_content('1JillJack')
-        expect(page).to have_content('3Pop(Bye)')
-        expect(page).to have_content('2SnapCrackle')
+        expect(page).to have_text('3(Bye)Pop')
+        expect(page).to have_text('2CrackleSnap')
+        expect(page).to have_text('1JackJill')
+        expect(page).to have_text('1JillJack')
+        expect(page).to have_text('3Pop(Bye)')
+        expect(page).to have_text('2SnapCrackle')
       end
     end
 
@@ -37,7 +37,7 @@ RSpec.describe 'list pairings for a round', type: :feature do
       sign_in round.tournament.user
       visit tournament_rounds_path(round.tournament)
 
-      expect(page).to have_content('6-0 3-3 (C) 3-3 (R) 0-6 ...')
+      expect(page).to have_text('6-0 3-3 (C) 3-3 (R) 0-6 ...')
     end
 
     it 'displays bye with streaming opt out enabled' do
@@ -45,7 +45,7 @@ RSpec.describe 'list pairings for a round', type: :feature do
       sign_in round.tournament.user
       visit tournament_rounds_path(round.tournament)
 
-      expect(page).to have_content('(Bye)')
+      expect(page).to have_text('(Bye)')
     end
   end
 
@@ -65,15 +65,15 @@ RSpec.describe 'list pairings for a round', type: :feature do
     end
 
     it 'displays side selection buttons' do
-      expect(page).to have_content('Corp Runner')
+      expect(page).to have_text('Corp Runner')
     end
 
     it 'does not display preset score options before side selection' do
       sign_in tournament.user
       visit tournament_rounds_path(tournament)
 
-      expect(page).to have_content('Corp Runner') # Verify present content to avoid false positives for following check.
-      expect(page).to have_no_content('3-0 0-3')
+      expect(page).to have_text('Corp Runner') # Verify present content to avoid false positives for following check.
+      expect(page).to have_no_text('3-0 0-3')
     end
 
     it 'displays preset score options after side selection' do
@@ -84,7 +84,7 @@ RSpec.describe 'list pairings for a round', type: :feature do
       sign_in tournament.user
       visit tournament_rounds_path(tournament)
 
-      expect(page).to have_content('3-0 0-3')
+      expect(page).to have_text('3-0 0-3')
     end
   end
 end

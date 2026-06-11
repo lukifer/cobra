@@ -9,14 +9,25 @@
   import IdentityComponent from "../identities/Identity.svelte";
   import { showIdentities } from "../utils/ShowIdentities";
 
-  export let match: BracketPairing;
-  export let allMatches: BracketPairing[];
-  export let predecessorMap: PredecessorMap;
-  export let isSingleElim = false;
-  export let x: number;
-  export let y: number;
-  export let width: number;
-  export let height: number;
+  let {
+    match,
+    allMatches,
+    predecessorMap,
+    isSingleElim = false,
+    x,
+    y,
+    width,
+    height,
+  }: {
+    match: BracketPairing;
+    allMatches: BracketPairing[];
+    predecessorMap: PredecessorMap;
+    isSingleElim?: boolean;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } = $props();
 
   function parseWinnerSide(
     scoreLabel: string | null | undefined,
@@ -57,9 +68,12 @@
     return null;
   }
 
-  $: topPlayer = match.player1?.side === "corp" ? match.player1 : match.player2;
-  $: bottomPlayer =
-    match.player1?.side === "corp" ? match.player2 : match.player1;
+  let topPlayer = $derived(
+    match.player1?.side === "corp" ? match.player1 : match.player2,
+  );
+  let bottomPlayer = $derived(
+    match.player1?.side === "corp" ? match.player2 : match.player1,
+  );
 
   function getPlayerBySide(
     match: BracketPairing,
@@ -100,11 +114,11 @@
     return `${role} of ${String(source.game)}`;
   }
 
-  $: sources = predecessorMap[match.table_number] ?? [];
-  $: topPlayerName = getPlayerFromSource(sources[0] ?? null);
-  $: topFallback = getFallbackText(sources[0] ?? null);
-  $: bottomPlayerName = getPlayerFromSource(sources[1] ?? null);
-  $: bottomFallback = getFallbackText(sources[1] ?? null);
+  let sources = $derived(predecessorMap[match.table_number] ?? []);
+  let topPlayerName = $derived(getPlayerFromSource(sources[0] ?? null));
+  let topFallback = $derived(getFallbackText(sources[0] ?? null));
+  let bottomPlayerName = $derived(getPlayerFromSource(sources[1] ?? null));
+  let bottomFallback = $derived(getFallbackText(sources[1] ?? null));
 </script>
 
 <g transform={`translate(${x}, ${y})`}>

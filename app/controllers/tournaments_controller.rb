@@ -312,8 +312,6 @@ class TournamentsController < ApplicationController # rubocop:disable Metrics/Cl
                       alert: 'You are not registered in this tournament.'
           return
         end
-
-        @my_tournament_data = SummarizedPairings.for_user_in_tournament(current_user.id, @tournament.id)
       end
       format.json do
         if current_user.nil?
