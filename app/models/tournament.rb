@@ -134,6 +134,20 @@ class Tournament < ApplicationRecord # rubocop:disable Metrics/ClassLength,Style
     end.sort_by { |element| element[1] }.reverse # rubocop:disable Style/MultilineBlockChain
   end
 
+  def corp_faction_counts(players_scope = players.active)
+    players_scope
+      .includes(:corp_identity_ref)
+      .map { |p| p.corp_identity_ref&.faction || 'unspecified' }
+      .tally
+  end
+
+  def runner_faction_counts(players_scope = players.active)
+    players_scope
+      .includes(:runner_identity_ref)
+      .map { |p| p.runner_identity_ref&.faction || 'unspecified' }
+      .tally
+  end
+
   def cut_stage?
     latest_stage = stages.last
     !latest_stage.nil? && stages.last.elimination?

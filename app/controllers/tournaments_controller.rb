@@ -395,10 +395,10 @@ class TournamentsController < ApplicationController # rubocop:disable Metrics/Cl
   end
 
   def set_tournament_view_data
-    @players = @tournament.players.includes(%i[corp_identity_ref runner_identity_ref]).active.sort_by do |p|
+    @players = @tournament.players.with_identity_factions.active.sort_by do |p|
       p.name || ''
     end
-    @dropped = @tournament.players.includes(%i[corp_identity_ref runner_identity_ref]).dropped.sort_by do |p|
+    @dropped = @tournament.players.with_identity_factions.dropped.sort_by do |p|
       p.name || ''
     end
 

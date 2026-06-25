@@ -17,6 +17,19 @@ class Player < ApplicationRecord # rubocop:disable Style/Documentation
   scope :active, -> { where(active: true) }
   scope :dropped, -> { where(active: false) }
   scope :with_first_round_bye, -> { where(first_round_bye: true) }
+  scope :with_identity_factions, lambda {
+    joins(<<~SQL.squish)
+      LEFT JOIN identities AS corp_identities
+        ON players.corp_identity_ref_id = corp_identities.id
+      LEFT JOIN identities AS runner_identities
+        ON players.runner_identity_ref_id = runner_identities.id
+    SQL
+      .select(
+        'players.*',
+        'corp_identities.faction AS corp_faction',
+        'runner_identities.faction AS runner_faction'
+      )
+  }
 
   def pairings
     Pairing.for_player(self)

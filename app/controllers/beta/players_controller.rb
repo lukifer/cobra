@@ -19,9 +19,8 @@ module Beta
     def players_data
       authorize @tournament, :update?
 
-      # TODO: Create a single query to fetch all players and then split the active/dropped results in this controller
-      players = @tournament.players.active.sort_by { |p| p.name.downcase || '' }
-      dropped = @tournament.players.dropped.sort_by { |p| p.name.downcase || '' }
+      players = @tournament.players.with_identity_factions.active.sort_by { |p| p.name.downcase || '' }
+      dropped = @tournament.players.with_identity_factions.dropped.sort_by { |p| p.name.downcase || '' }
 
       render json: {
         tournament: helpers.tournament_json(@tournament),
@@ -91,9 +90,9 @@ module Beta
     def by_user_id
       authorize @tournament, :show?
 
-      render json: helpers.player_json(@tournament.players.find { |p|
-        p.user_id == params[:user_id].to_i
-      })
+      render json: helpers.player_json(
+        @tournament.players.with_identity_factions.find { |p| p.user_id == params[:user_id].to_i }
+      )
     end
 
     def registration

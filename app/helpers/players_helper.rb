@@ -59,10 +59,16 @@ module PlayersHelper # rubocop:disable Style/Documentation
   def id(player, side)
     return { name: '', faction: '' } if player.nil?
 
-    id = Identity.find_or_initialize_by(name: player["#{side}_identity"])
-    {
-      name: id.name,
-      faction: id.faction
-    }
+    if player.is_a?(Player)
+      identity_ref = side == 'corp' ? player.corp_identity_ref : player.runner_identity_ref
+      name = identity_ref&.name || player["#{side}_identity"]
+      faction = player["#{side}_faction"] || identity_ref&.faction
+      { name: name.to_s, faction: faction.to_s }
+    else
+      {
+        name: player["#{side}_identity"].to_s,
+        faction: player["#{side}_faction"].to_s
+      }
+    end
   end
 end

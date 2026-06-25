@@ -3,7 +3,25 @@
     - @overview_notices.each do |notice|
       .alert.alert-info #{notice}
   .card
+    / pre.mb-0.small= JSON.pretty_generate(@players.as_json)
+    pre.mb-0.small= JSON.pretty_generate(@tournament.corp_faction_counts.as_json)
     ul.list-group.list-group-flush
+      / - corp_counts = @tournament.corp_faction_counts
+      / - runner_counts = @tournament.runner_faction_counts
+      li.list-group-item
+        | HB: #{@tournament.corp_faction_counts.fetch("haas-bioroid", 0)}
+        | Jinteki: #{@tournament.corp_faction_counts.fetch("jinteki", 0)}
+        | NBN: #{@tournament.corp_faction_counts.fetch("nbn", 0)}
+        | Weyland: #{@tournament.corp_faction_counts.fetch("weyland-consortium", 0)}
+        | Other: #{@tournament.corp_faction_counts.fetch("neutral-corp", 0)}
+
+        | Adam: #{@tournament.runner_faction_counts.fetch("adam", 0)}
+        | Apex: #{@tournament.runner_faction_counts.fetch("apex", 0)}
+        | Sunny: #{@tournament.runner_faction_counts.fetch("sunny-lebeau", 0)}
+        | Anarch: #{@tournament.runner_faction_counts.fetch("anarch", 0)}
+        | Criminal: #{@tournament.runner_faction_counts.fetch("criminal", 0)}
+        | Shaper: #{@tournament.runner_faction_counts.fetch("shaper", 0)}
+        | Other: #{@tournament.runner_faction_counts.fetch("neutral-runner", 0)}
       - if @tournament.slug
         li.list-group-item
           .small.text-secondary Shortcode:
