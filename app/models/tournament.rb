@@ -5,6 +5,7 @@ class Tournament < ApplicationRecord # rubocop:disable Metrics/ClassLength,Style
   belongs_to :user
   has_many :stages, -> { order(:number) }, dependent: :destroy # rubocop:disable Rails/InverseOf
   has_many :rounds
+  has_many :pairings, through: :rounds
   belongs_to :format, optional: true
   belongs_to :deckbuilding_restriction, optional: true
   belongs_to :official_prize_kit, optional: true
@@ -270,6 +271,28 @@ class Tournament < ApplicationRecord # rubocop:disable Metrics/ClassLength,Style
       'decklists, they may be shared with participants or made public.'
   end
 
+  # Sum of pairing scores earned by each player's contributed half-deck (Smashup).
+  # Returns { player_id => total_score } for reported pairings with deck source refs.
+  def half_deck_score_totals
+    sql = build_half_deck_score_totals_sql
+    ActiveRecord::Base.connection.exec_query(sql).each_with_object({}) do |row, totals|
+      totals[row['deck_player_id']] = row['total_score'].to_i
+    end
+  end
+
+  def half_deck_score_for(player)
+    half_deck_score_totals.fetch(player.id, 0)
+  end
+
+  def eligible_pairings
+    rounds.complete.includes(:pairings).flat_map(&:pairings)
+  end
+
+  # Ordered half-deck standings for Smashup (points, SoS, extended SoS).
+  def half_deck_standings
+    HalfDeckStandingsCalculator.calculate!(self)
+  end
+
   def side_win_percentages_data
     sql = ActiveRecord::Base.sanitize_sql(
       ['SELECT * FROM side_win_percentages WHERE tournament_id = ? ORDER BY stage_number ASC', id]
@@ -397,6 +420,48 @@ class Tournament < ApplicationRecord # rubocop:disable Metrics/ClassLength,Style
       results[side][:factions][row['faction']] += row['num_ids']
     end
     results
+  end
+
+  def build_half_deck_score_totals_sql
+    sql = <<~SQL.squish
+      SELECT deck_player_id, SUM(score) AS total_score
+      FROM (
+        SELECT pairings.player1_deck1_player_id AS deck_player_id, pairings.score1 AS score
+        FROM pairings
+        INNER JOIN rounds ON rounds.id = pairings.round_id
+        WHERE rounds.tournament_id = ?
+          AND pairings.score1 IS NOT NULL
+          AND pairings.score2 IS NOT NULL
+          AND pairings.player1_deck1_player_id IS NOT NULL
+        UNION ALL
+        SELECT pairings.player1_deck2_player_id, pairings.score1
+        FROM pairings
+        INNER JOIN rounds ON rounds.id = pairings.round_id
+        WHERE rounds.tournament_id = ?
+          AND pairings.score1 IS NOT NULL
+          AND pairings.score2 IS NOT NULL
+          AND pairings.player1_deck2_player_id IS NOT NULL
+        UNION ALL
+        SELECT pairings.player2_deck1_player_id, pairings.score2
+        FROM pairings
+        INNER JOIN rounds ON rounds.id = pairings.round_id
+        WHERE rounds.tournament_id = ?
+          AND pairings.score1 IS NOT NULL
+          AND pairings.score2 IS NOT NULL
+          AND pairings.player2_deck1_player_id IS NOT NULL
+        UNION ALL
+        SELECT pairings.player2_deck2_player_id, pairings.score2
+        FROM pairings
+        INNER JOIN rounds ON rounds.id = pairings.round_id
+        WHERE rounds.tournament_id = ?
+          AND pairings.score1 IS NOT NULL
+          AND pairings.score2 IS NOT NULL
+          AND pairings.player2_deck2_player_id IS NOT NULL
+      ) AS deck_scores
+      GROUP BY deck_player_id
+    SQL
+
+    ActiveRecord::Base.sanitize_sql([sql, id, id, id, id])
   end
 
   def build_id_stats_sql(id, is_cut: false)

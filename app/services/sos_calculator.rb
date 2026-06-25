@@ -43,9 +43,22 @@ class SosCalculator # rubocop:disable Style/Documentation
       bye_points[p.player2_id] += p.score2 if p.player1_id.nil? && !p.score2.nil?
     end
 
-    # filter out byes from sos calculations
-    opponents.each do |k, i|
-      opponents[k] = i.select { |player| player[:id] }
+    sos, extended_sos = compute_sos_and_extended_sos(opponents, points_for_sos, games_played)
+
+    players.values.map do |p|
+      Standing.new(p,
+                   points: points[p.id],
+                   sos: sos[p.id],
+                   extended_sos: extended_sos[p.id],
+                   bye_points: bye_points[p.id] || 0,
+                   corp_points: corp_points[p.id],
+                   runner_points: runner_points[p.id])
+    end.sort
+  end
+
+  def self.compute_sos_and_extended_sos(opponents, points_for_sos, games_played)
+    opponents.each do |k, opponents_for_player|
+      opponents[k] = opponents_for_player.select { |player| player[:id] }
     end
 
     sos = {}
@@ -70,14 +83,6 @@ class SosCalculator # rubocop:disable Style/Documentation
                          end
     end
 
-    players.values.map do |p|
-      Standing.new(p,
-                   points: points[p.id],
-                   sos: sos[p.id],
-                   extended_sos: extended_sos[p.id],
-                   bye_points: bye_points[p.id] || 0,
-                   corp_points: corp_points[p.id],
-                   runner_points: runner_points[p.id])
-    end.sort
+    [sos, extended_sos]
   end
 end

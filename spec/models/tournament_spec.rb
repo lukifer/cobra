@@ -69,6 +69,126 @@ RSpec.describe Tournament do
     end
   end
 
+  describe '#half_deck_score_totals' do
+    let(:smashup_format) { Format.find_or_create_by!(name: 'Smashup') { |f| f.position = 98 } }
+    let(:tournament) { create(:tournament, swiss_format: :single_sided, format: smashup_format, player_count: 4) }
+    let(:players) { tournament.players.order(:id).to_a }
+    let(:round) { tournament.current_stage.rounds.create!(number: 1, tournament_id: tournament.id) }
+
+    it 'returns an empty hash when there are no reported smashup pairings' do
+      expect(tournament.half_deck_score_totals).to eq({})
+    end
+
+    it 'returns an empty hash for tournaments without deck source pairings' do
+      other = create(:tournament, player_count: 4)
+      other_round = other.current_stage.rounds.create!(number: 1, tournament_id: other.id)
+      create(:pairing, round: other_round, player1: other.players.first, player2: other.players.second,
+                       score1: 3, score2: 0)
+
+      expect(other.half_deck_score_totals).to eq({})
+    end
+
+    it 'sums score1 for player1 deck sources and score2 for player2 deck sources' do
+      seated1, seated2, deck_a, deck_b = players
+      create(:pairing, round:, player1: seated1, player2: seated2,
+                       score1: 3, score2: 0,
+                       player1_deck1_player_id: deck_a.id,
+                       player1_deck2_player_id: deck_b.id,
+                       player2_deck1_player_id: deck_a.id,
+                       player2_deck2_player_id: deck_b.id)
+
+      expect(tournament.half_deck_score_totals).to eq(
+        deck_a.id => 3,
+        deck_b.id => 3
+      )
+    end
+
+    it 'accumulates scores across multiple reported pairings' do
+      seated1, seated2, deck_a, deck_b = players
+      create(:pairing, round:, player1: seated1, player2: seated2,
+                       score1: 3, score2: 0,
+                       player1_deck1_player_id: deck_a.id,
+                       player1_deck2_player_id: deck_b.id,
+                       player2_deck1_player_id: deck_a.id,
+                       player2_deck2_player_id: deck_b.id)
+      create(:pairing, round:, player1: seated2, player2: seated1,
+                       score1: 1, score2: 5,
+                       player1_deck1_player_id: deck_a.id,
+                       player1_deck2_player_id: deck_b.id,
+                       player2_deck1_player_id: deck_a.id,
+                       player2_deck2_player_id: deck_b.id)
+
+      expect(tournament.half_deck_score_totals).to eq(
+        deck_a.id => 9,
+        deck_b.id => 9
+      )
+    end
+
+    it 'ignores pairings that are not fully reported' do
+      seated1, seated2, deck_a, deck_b = players
+      create(:pairing, round:, player1: seated1, player2: seated2,
+                       score1: nil, score2: nil,
+                       player1_deck1_player_id: deck_a.id,
+                       player1_deck2_player_id: deck_b.id,
+                       player2_deck1_player_id: deck_a.id,
+                       player2_deck2_player_id: deck_b.id)
+
+      expect(tournament.half_deck_score_totals).to eq({})
+    end
+  end
+
+  describe '#half_deck_score_for' do
+    let(:smashup_format) { Format.find_or_create_by!(name: 'Smashup') { |f| f.position = 98 } }
+    let(:tournament) { create(:tournament, swiss_format: :single_sided, format: smashup_format, player_count: 4) }
+    let(:players) { tournament.players.order(:id).to_a }
+    let(:round) { tournament.current_stage.rounds.create!(number: 1, tournament_id: tournament.id) }
+
+    it 'returns the total for one player and zero when they have no contributions' do
+      seated1, seated2, deck_a, deck_b = players
+      create(:pairing, round:, player1: seated1, player2: seated2,
+                       score1: 3, score2: 0,
+                       player1_deck1_player_id: deck_a.id,
+                       player1_deck2_player_id: deck_b.id,
+                       player2_deck1_player_id: deck_a.id,
+                       player2_deck2_player_id: deck_b.id)
+
+      expect(tournament.half_deck_score_for(deck_a)).to eq(3)
+      expect(tournament.half_deck_score_for(seated1)).to eq(0)
+    end
+  end
+
+  describe '#half_deck_standings' do
+    let(:smashup_format) { Format.find_or_create_by!(name: 'Smashup') { |f| f.position = 98 } }
+    let(:tournament) { create(:tournament, swiss_format: :single_sided, format: smashup_format, player_count: 4) }
+    let(:players) { tournament.players.order(:id).to_a }
+    let(:round) do
+      tournament.current_stage.rounds.create!(number: 1, tournament_id: tournament.id, completed: true)
+    end
+
+    it 'delegates to HalfDeckStandingsCalculator and returns ordered standings' do
+      seated1, seated2, deck_a, deck_b = players
+      create(:pairing, round:, player1: seated1, player2: seated2,
+                       side: :player1_is_corp, score1: 6, score2: 0,
+                       player1_deck1_player_id: deck_a.id,
+                       player1_deck2_player_id: deck_b.id,
+                       player2_deck1_player_id: deck_a.id,
+                       player2_deck2_player_id: deck_b.id)
+
+      standings = tournament.half_deck_standings
+
+      expect(standings).to all(be_a(HalfDeckStanding))
+      expect(standings.map { |standing| [standing.player, standing.side] }).to contain_exactly(
+        [deck_a, :corp],
+        [deck_b, :corp],
+        [deck_a, :runner],
+        [deck_b, :runner]
+      )
+      expect(standings.first.points).to eq(6)
+      expect(standings.first.sos).to be_a(Numeric)
+      expect(standings.first.extended_sos).to be_a(Numeric)
+    end
+  end
+
   describe 'stream_url' do
     it 'has no stream_url by default' do
       expect(tournament.stream_url).to be_nil
