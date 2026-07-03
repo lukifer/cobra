@@ -18,7 +18,29 @@ export async function loadStandings(
 
 export interface StandingsData {
   manual_seed: boolean;
+  smashup: boolean;
+  half_deck_standings: HalfDeckStanding[];
   stages: Stage[];
+}
+
+export interface HalfDeckStanding {
+  position: number;
+  player: Player;
+  side: "corp" | "runner";
+  identity: Identity | null;
+  points: number;
+  sos: string;
+  extended_sos: string;
+}
+
+export interface CombinedDeckStanding {
+  position: number;
+  player: Player;
+  corp_identity: Identity | null;
+  runner_identity: Identity | null;
+  points: number;
+  sos: string;
+  extended_sos: string;
 }
 
 export interface Stage {

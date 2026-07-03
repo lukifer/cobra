@@ -83,6 +83,15 @@ class Player < ApplicationRecord # rubocop:disable Style/Documentation
     pairings.bye.any?
   end
 
+  def identity_ref_for_side(side)
+    case side.to_sym
+    when :corp
+      corp_identity_ref
+    when :runner
+      runner_identity_ref
+    end
+  end
+
   def corp_identity_object
     if corp_identity_ref
       corp_identity_ref
@@ -100,6 +109,19 @@ class Player < ApplicationRecord # rubocop:disable Style/Documentation
       Identity.find_or_initialize_by(name: runner_identity)
     else
       Identity.new
+    end
+  end
+
+  def contributor_identity_for_side(side)
+    identity_ref_for_side(side) || identity_object_for_side(side)
+  end
+
+  def identity_object_for_side(side)
+    case side.to_sym
+    when :corp
+      corp_identity_object
+    when :runner
+      runner_identity_object
     end
   end
 

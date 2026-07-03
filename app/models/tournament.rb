@@ -113,40 +113,20 @@ class Tournament < ApplicationRecord # rubocop:disable Metrics/ClassLength,Style
     end
   end
 
-  def corp_counts
-    total_players = players.count
-    players.group_by(&:corp_identity).map do |id, players|
-      [
-        Identity.find_or_initialize_by(name: id),
-        players.count,
-        total_players
-      ]
-    end.sort_by { |element| element[1] }.reverse # rubocop:disable Style/MultilineBlockChain
+  def corp_counts(players_scope = players)
+    identity_counts_for_side(players_scope, :corp)
   end
 
-  def runner_counts
-    total_players = players.count
-    players.group_by(&:runner_identity).map do |id, players|
-      [
-        Identity.find_or_initialize_by(name: id),
-        players.count,
-        total_players
-      ]
-    end.sort_by { |element| element[1] }.reverse # rubocop:disable Style/MultilineBlockChain
+  def runner_counts(players_scope = players)
+    identity_counts_for_side(players_scope, :runner)
   end
 
   def corp_faction_counts(players_scope = players.active)
-    players_scope
-      .includes(:corp_identity_ref)
-      .map { |p| p.corp_identity_ref&.faction || 'unspecified' }
-      .tally
+    faction_counts_for_side(players_scope, :corp)
   end
 
   def runner_faction_counts(players_scope = players.active)
-    players_scope
-      .includes(:runner_identity_ref)
-      .map { |p| p.runner_identity_ref&.faction || 'unspecified' }
-      .tally
+    faction_counts_for_side(players_scope, :runner)
   end
 
   def cut_stage?
@@ -373,6 +353,41 @@ class Tournament < ApplicationRecord # rubocop:disable Metrics/ClassLength,Style
   end
 
   private
+
+  def identity_counts_for_side(players_scope, side)
+    identity_ref = :"#{side}_identity_ref"
+    identity_name = :"#{side}_identity"
+    players = players_with_identity_refs(players_scope, identity_ref)
+    total_players = players.size
+
+    players
+      .group_by { |player| player.public_send(identity_ref) || Identity.find_or_initialize_by(name: player.public_send(identity_name)) }
+      .map { |identity, grouped_players| [identity, grouped_players.count, total_players] }
+      .sort_by { |element| element[1] }
+      .reverse
+  end
+
+  def faction_counts_for_side(players_scope, side)
+    identity_ref = :"#{side}_identity_ref"
+    faction_attr = :"#{side}_faction"
+    players = players_with_identity_refs(players_scope, identity_ref)
+
+    players.map do |player|
+      if player.respond_to?(faction_attr) && !player.public_send(faction_attr).nil?
+        player.public_send(faction_attr)
+      else
+        player.public_send(identity_ref)&.faction || 'unspecified'
+      end
+    end.tally
+  end
+
+  def players_with_identity_refs(players_scope, *identity_refs)
+    if players_scope.is_a?(ActiveRecord::Relation)
+      players_scope.includes(*identity_refs)
+    else
+      players_scope
+    end
+  end
 
   def default_date
     self.date = Date.current

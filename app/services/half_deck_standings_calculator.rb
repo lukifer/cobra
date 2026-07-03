@@ -10,7 +10,7 @@ class HalfDeckStandingsCalculator # rubocop:disable Style/Documentation
   end
 
   def calculate!
-    players = tournament.players.index_by(&:id)
+    players = tournament.players.includes(:corp_identity_ref, :runner_identity_ref).index_by(&:id)
     points = {}
     games_played = {}
     opponents = {}

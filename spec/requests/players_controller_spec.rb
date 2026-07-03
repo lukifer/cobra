@@ -356,9 +356,10 @@ RSpec.describe PlayersController do
 
         expect(compare_body(response))
           .to eq(
-            'is_player_meeting' => true,
-            'manual_seed' => false,
-            'stages' => [
+            standings_expectation(
+              'is_player_meeting' => true,
+              'manual_seed' => false,
+              'stages' => [
               { 'format' => 'swiss',
                 'any_decks_viewable' => false,
                 'rounds_complete' => 0,
@@ -368,6 +369,7 @@ RSpec.describe PlayersController do
                   standing_with_no_score(3, player_with_hidden_ids('Charlie (she/her)'))
                 ] }
             ]
+            )
           )
       end
 
@@ -377,9 +379,10 @@ RSpec.describe PlayersController do
 
         expect(compare_body(response))
           .to eq(
-            'is_player_meeting' => true,
-            'manual_seed' => false,
-            'stages' => [
+            standings_expectation(
+              'is_player_meeting' => true,
+              'manual_seed' => false,
+              'stages' => [
               { 'format' => 'swiss',
                 'any_decks_viewable' => false,
                 'rounds_complete' => 0,
@@ -389,6 +392,7 @@ RSpec.describe PlayersController do
                   standing_with_no_score(3, player_with_hidden_ids('Charlie (she/her)'))
                 ] }
             ]
+            )
           )
       end
 
@@ -398,9 +402,10 @@ RSpec.describe PlayersController do
 
         expect(compare_body(response))
           .to eq(
-            'is_player_meeting' => true,
-            'manual_seed' => false,
-            'stages' => [
+            standings_expectation(
+              'is_player_meeting' => true,
+              'manual_seed' => false,
+              'stages' => [
               { 'format' => 'swiss',
                 'any_decks_viewable' => false,
                 'rounds_complete' => 0,
@@ -410,6 +415,7 @@ RSpec.describe PlayersController do
                   standing_with_no_score(3, player_with_hidden_ids('Charlie (she/her)'))
                 ] }
             ]
+            )
           )
       end
     end
@@ -430,9 +436,10 @@ RSpec.describe PlayersController do
 
         expect(compare_body(response))
           .to eq(
-            'is_player_meeting' => false,
-            'manual_seed' => false,
-            'stages' => [
+            standings_expectation(
+              'is_player_meeting' => false,
+              'manual_seed' => false,
+              'stages' => [
               { 'format' => 'swiss',
                 'any_decks_viewable' => false,
                 'rounds_complete' => 1,
@@ -445,6 +452,7 @@ RSpec.describe PlayersController do
                                                 player: player_with_no_ids('Bob (he/him)'))
                 ] }
             ]
+            )
           )
       end
     end
@@ -467,9 +475,10 @@ RSpec.describe PlayersController do
 
         expect(compare_body(response))
           .to eq(
-            'is_player_meeting' => false,
-            'manual_seed' => false,
-            'stages' => [
+            standings_expectation(
+              'is_player_meeting' => false,
+              'manual_seed' => false,
+              'stages' => [
               { 'format' => 'single_elim',
                 'any_decks_viewable' => false,
                 'rounds_complete' => 0,
@@ -490,6 +499,7 @@ RSpec.describe PlayersController do
                                                 player: player_with_no_ids('Bob (he/him)'))
                 ] }
             ]
+            )
           )
       end
     end
@@ -517,9 +527,10 @@ RSpec.describe PlayersController do
 
         expect(compare_body(response))
           .to eq(
-            'is_player_meeting' => false,
-            'manual_seed' => false,
-            'stages' => [
+            standings_expectation(
+              'is_player_meeting' => false,
+              'manual_seed' => false,
+              'stages' => [
               { 'format' => 'single_elim',
                 'any_decks_viewable' => false,
                 'rounds_complete' => 1,
@@ -541,19 +552,162 @@ RSpec.describe PlayersController do
                                                 player: player_with_no_ids('Bob (he/him)'))
                 ] }
             ]
+            )
           )
+      end
+    end
+
+    describe 'smashup half-deck standings' do
+      let(:smashup_format) { Format.find_or_create_by!(name: 'Smashup') { |f| f.position = 98 } }
+      let(:tournament) do
+        create(:tournament, name: 'Smashup', user: organiser, format: smashup_format, swiss_format: :single_sided)
+      end
+      let!(:corp_contrib_a) do
+        create(:player, tournament:, name: 'Corp Contrib A',
+                        corp_identity_ref: create(:id_etf), runner_identity_ref: create(:id_az))
+      end
+      let!(:corp_contrib_b) do
+        create(:player, tournament:, name: 'Corp Contrib B',
+                        corp_identity_ref: create(:id_pd), runner_identity_ref: create(:id_sable))
+      end
+      let!(:runner_contrib_c) do
+        create(:player, tournament:, name: 'Runner Contrib C',
+                        corp_identity_ref: create(:id_ampere), runner_identity_ref: create(:id_esa))
+      end
+      let!(:runner_contrib_d) do
+        create(:player, tournament:, name: 'Runner Contrib D',
+                        corp_identity_ref: create(:id_ob), runner_identity_ref: create(:id_ari))
+      end
+      let!(:seated1) { create(:player, tournament:, name: 'Seated 1') }
+      let!(:seated2) { create(:player, tournament:, name: 'Seated 2') }
+
+      before do
+        round = tournament.current_stage.rounds.create!(number: 1, tournament_id: tournament.id, completed: true)
+        create(:pairing, round:, player1: seated1, player2: seated2, side: :player1_is_corp,
+                         score1: 6, score2: 0,
+                         player1_deck1_player_id: corp_contrib_a.id,
+                         player1_deck2_player_id: corp_contrib_b.id,
+                         player2_deck1_player_id: runner_contrib_c.id,
+                         player2_deck2_player_id: runner_contrib_d.id)
+      end
+
+      it 'includes half-deck standings in the response' do
+        get standings_data_tournament_players_path(tournament)
+
+        body = compare_body(response)
+        expect(body['smashup']).to be(true)
+        expect(body['half_deck_standings'].length).to eq(4)
+
+        deck_a_corp = body['half_deck_standings'].find do |standing|
+          standing['player']['name_with_pronouns'] == corp_contrib_a.name_with_pronouns &&
+            standing['side'] == 'corp'
+        end
+        expect(deck_a_corp).to include(
+          'points' => 6,
+          'sos' => '0.0',
+          'extended_sos' => '6.0'
+        )
+      end
+
+      it 'matches each standing identity to the contributor identity ref for that side' do
+        get standings_data_tournament_players_path(tournament)
+
+        expect_half_deck_standing_identities(
+          compare_body(response)['half_deck_standings'],
+          contributors: [corp_contrib_a, corp_contrib_b, runner_contrib_c, runner_contrib_d]
+        )
+      end
+
+      it 'never exposes a runner identity on a corp half-deck standing' do
+        get standings_data_tournament_players_path(tournament)
+
+        corp_standings = compare_body(response)['half_deck_standings'].select { |standing| standing['side'] == 'corp' }
+        expect(corp_standings).not_to be_empty
+        corp_standings.each do |standing|
+          expect(standing['identity']['side']).to eq('corp')
+        end
+      end
+
+      it 'never exposes a corp identity on a runner half-deck standing' do
+        get standings_data_tournament_players_path(tournament)
+
+        runner_standings = compare_body(response)['half_deck_standings'].select { |standing| standing['side'] == 'runner' }
+        expect(runner_standings).not_to be_empty
+        runner_standings.each do |standing|
+          expect(standing['identity']['side']).to eq('runner')
+        end
+      end
+
+      context 'when a contributor has a corp identity stored in runner_identity_ref' do
+        let!(:misassigned_contrib) do
+          create(:player, tournament:, name: 'Misassigned Contrib',
+                          corp_identity_ref: create(:id_etf),
+                          runner_identity_ref: create(:id_au_co))
+        end
+
+        before do
+          round = tournament.current_stage.rounds.last
+          create(:pairing, round:, player1: seated1, player2: seated2, side: :player1_is_runner,
+                           score1: 3, score2: 3,
+                           player1_deck1_player_id: misassigned_contrib.id,
+                           player1_deck2_player_id: corp_contrib_a.id,
+                           player2_deck1_player_id: runner_contrib_c.id,
+                           player2_deck2_player_id: runner_contrib_d.id)
+        end
+
+        it 'still resolves runner standings from runner_identity_ref_id' do
+          get standings_data_tournament_players_path(tournament)
+
+          standing = find_half_deck_standing(
+            compare_body(response)['half_deck_standings'],
+            contributor: misassigned_contrib,
+            side: 'runner'
+          )
+
+          expect(standing['identity']).to eq(expected_standings_identity(misassigned_contrib.runner_identity_ref))
+        end
+
+        it 'surfaces invalid registration data when the runner ref points at a corp identity' do
+          expect(misassigned_contrib.runner_identity_ref.side).to eq('corp')
+
+          get standings_data_tournament_players_path(tournament)
+
+          standing = find_half_deck_standing(
+            compare_body(response)['half_deck_standings'],
+            contributor: misassigned_contrib,
+            side: 'runner'
+          )
+
+          expect(standing['identity']['side']).not_to eq('runner')
+        end
       end
     end
   end
 
   def compare_body(response)
-    body = JSON.parse(response.body)
+    normalize_standings_body(JSON.parse(response.body))
+  end
+
+  def normalize_standings_body(body)
     body['stages'].each do |stage|
       stage['standings'].each do |standing|
         standing['player']&.delete 'id'
       end
     end
-    body
+    body.fetch('half_deck_standings', []).each do |standing|
+      standing['player']&.delete 'id'
+    end
+    body.merge(
+      'smashup' => body.fetch('smashup', false),
+      'half_deck_standings' => body.fetch('half_deck_standings', [])
+    )
+  end
+
+  def standings_expectation(attrs)
+    attrs.merge(
+      'smashup' => attrs.fetch('smashup', false),
+      'half_deck_standings' => attrs.fetch('half_deck_standings', [])
+    )
   end
 
   def standing_with_no_score(position, player)

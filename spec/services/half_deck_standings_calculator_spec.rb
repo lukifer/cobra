@@ -103,4 +103,59 @@ RSpec.describe HalfDeckStandingsCalculator do
       expect(results).to eq([])
     end
   end
+
+  context 'with realistic smashup deck assignment and distinct identities' do
+    let!(:corp_contrib_a) do
+      create(:player, tournament:, name: 'Corp Contrib A',
+                      corp_identity_ref: create(:id_etf), runner_identity_ref: create(:id_az))
+    end
+    let!(:corp_contrib_b) do
+      create(:player, tournament:, name: 'Corp Contrib B',
+                      corp_identity_ref: create(:id_pd), runner_identity_ref: create(:id_sable))
+    end
+    let!(:runner_contrib_c) do
+      create(:player, tournament:, name: 'Runner Contrib C',
+                      corp_identity_ref: create(:id_ampere), runner_identity_ref: create(:id_esa))
+    end
+    let!(:runner_contrib_d) do
+      create(:player, tournament:, name: 'Runner Contrib D',
+                      corp_identity_ref: create(:id_ob), runner_identity_ref: create(:id_ari))
+    end
+
+    before do
+      create(:pairing, round:, player1: snap, player2: crackle, side: :player1_is_corp,
+                       score1: 6, score2: 0,
+                       player1_deck1_player_id: corp_contrib_a.id,
+                       player1_deck2_player_id: corp_contrib_b.id,
+                       player2_deck1_player_id: runner_contrib_c.id,
+                       player2_deck2_player_id: runner_contrib_d.id)
+    end
+
+    it 'only creates corp standings for corp-side deck contributors' do
+      expect(results.map { |standing| [standing.player, standing.side] }).to contain_exactly(
+        [corp_contrib_a, :corp],
+        [corp_contrib_b, :corp],
+        [runner_contrib_c, :runner],
+        [runner_contrib_d, :runner]
+      )
+    end
+
+    it 'resolves contributor identities from the correct identity ref for each side' do
+      aggregate_failures do
+        expect(standing_for(corp_contrib_a, :corp).contributor_identity).to eq(corp_contrib_a.corp_identity_ref)
+        expect(standing_for(corp_contrib_a, :corp).contributor_identity.side).to eq('corp')
+        expect(standing_for(runner_contrib_c, :runner).contributor_identity).to eq(runner_contrib_c.runner_identity_ref)
+        expect(standing_for(runner_contrib_c, :runner).contributor_identity.side).to eq('runner')
+      end
+    end
+
+    it 'does not create runner standings for contributors only used on the corp side' do
+      aggregate_failures do
+        expect(standing_for(corp_contrib_a, :runner)).to be_nil
+        expect(standing_for(corp_contrib_b, :runner)).to be_nil
+        expect(standing_for(runner_contrib_c, :corp)).to be_nil
+        expect(standing_for(runner_contrib_d, :corp)).to be_nil
+      end
+    end
+  end
 end

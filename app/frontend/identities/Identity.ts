@@ -23,4 +23,5 @@ export interface IdentityNames {
 export class Identity {
   name = "";
   faction: string | null = null;
+  side?: "corp" | "runner";
 }

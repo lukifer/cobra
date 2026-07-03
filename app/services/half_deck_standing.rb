@@ -29,4 +29,8 @@ class HalfDeckStanding # rubocop:disable Style/Documentation
   def runner?
     side == :runner
   end
+
+  def contributor_identity
+    player.contributor_identity_for_side(side)
+  end
 end

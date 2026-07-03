@@ -274,6 +274,8 @@ class PlayersController < ApplicationController # rubocop:disable Metrics/ClassL
     render json: {
       is_player_meeting:,
       manual_seed: tournament_manual_seed,
+      smashup: @tournament.smashup_format?,
+      half_deck_standings: half_deck_standings_payload,
       stages: stages_array
     }
   end
@@ -361,9 +363,40 @@ class PlayersController < ApplicationController # rubocop:disable Metrics/ClassL
   def standings_identity(identity)
     return nil unless identity
 
-    {
+    payload = {
       name: identity.name,
       faction: identity.faction
+    }
+    payload[:side] = identity.side if identity.try(:side).present?
+    payload
+  end
+
+  def half_deck_standings_payload
+    return [] unless @tournament.smashup_format?
+
+    show_ids = @tournament.show_identities?
+    @tournament.half_deck_standings.each_with_index.map do |standing, i|
+      identity = show_ids ? standings_identity(standing.contributor_identity) : nil
+
+      {
+        position: i + 1,
+        player: half_deck_contributor_player(standing.player, show_ids:),
+        side: standing.side.to_s,
+        identity:,
+        points: standing.points,
+        sos: standing.sos.to_s,
+        extended_sos: standing.extended_sos.to_s
+      }
+    end
+  end
+
+  def half_deck_contributor_player(player, show_ids:)
+    {
+      id: player.id,
+      active: player.active,
+      name_with_pronouns: player.name_with_pronouns,
+      corp_id: show_ids ? standings_identity(player.corp_identity_ref) : nil,
+      runner_id: show_ids ? standings_identity(player.runner_identity_ref) : nil
     }
   end
 
