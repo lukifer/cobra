@@ -4,6 +4,7 @@ import { svelteTesting } from "@testing-library/svelte/vite";
 
 export default defineConfig({
   test: {
+    clearMocks: true,
     projects: [
       {
         plugins: [svelte(), svelteTesting()],
@@ -12,6 +13,7 @@ export default defineConfig({
           setupFiles: ["./vitest-setup.svelte.ts"],
           globals: true,
           include: ["app/**/*.svelte-test.ts"],
+          clearMocks: true,
         },
       },
       {
@@ -19,12 +21,14 @@ export default defineConfig({
           environment: "node",
           setupFiles: ["./vitest-setup.msw.ts"],
           include: ["app/**/*.msw-test.ts"],
+          clearMocks: true,
         },
       },
       {
         test: {
           environment: "node",
           include: ["app/**/*.test.ts"],
+          clearMocks: true,
         },
       },
     ],

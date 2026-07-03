@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     emptyTournamentOptions,
+    swissFormatDisplayString,
     Tournament,
     type Errors,
     type FeatureFlags,
@@ -122,7 +123,7 @@
     class="form-control"
     bind:value={tournamentEdit.swiss_format}
   >
-    <option value="single_sided">Single-sided</option>
+    <option value="single_sided">{swissFormatDisplayString("single_sided")}</option>
   </select>
   {#if errors.swiss_format}
     <div class="invalid-feedback d-block">{errors.swiss_format}</div>

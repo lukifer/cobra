@@ -1,11 +1,20 @@
-#####################################################################
+# Stage 1: Copy Node.js binaries from the official Node Alpine image
+FROM node:24-alpine AS node-builder
+
+# Stage 2: Create the final ruby & node image
 FROM ruby:3.4.4-alpine3.20 AS base
+
+# Copy Node.js binaries from the node-builder stage
+COPY --from=node-builder /usr/lib /usr/lib
+COPY --from=node-builder /usr/local/share /usr/local/share
+COPY --from=node-builder /usr/local/lib /usr/local/lib
+COPY --from=node-builder /usr/local/include /usr/local/include
+COPY --from=node-builder /usr/local/bin /usr/local/bin
 
 # Install essential Linux packages and nodejs
 RUN apk -U upgrade && apk add --no-cache \
   gcompat \
   libffi-dev \
-  nodejs \
   npm \
   postgresql-client \
   tzdata \
@@ -13,8 +22,8 @@ RUN apk -U upgrade && apk add --no-cache \
   && rm -rf /var/cache/apk/*
 
 # Define where our application will live inside the image
-ENV RAILS_ROOT /var/www/cobra
-ENV BUNDLE_ROOT /var/www/bundle
+ENV RAILS_ROOT=/var/www/cobra
+ENV BUNDLE_ROOT=/var/www/bundle
 
 
 #####################################################################

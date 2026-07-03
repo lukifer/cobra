@@ -12,6 +12,7 @@
 
   let {
     css = "btn btn-info",
+    disabled = false,
     children,
     inProgressText = "In progress",
     completeText = "Complete",
@@ -20,6 +21,7 @@
     onclick,
   }: {
     css?: string;
+    disabled?: boolean;
     children: Snippet;
     inProgressText?: string;
     completeText?: string;
@@ -48,7 +50,7 @@
   type="button"
   class={css}
   onclick={clicked}
-  disabled={state !== State.DEFAULT}
+  disabled={disabled || state !== State.DEFAULT}
 >
   {#if state === State.IN_PROGRESS}
     <span class="spinner-border spinner-border-sm m-auto"></span>

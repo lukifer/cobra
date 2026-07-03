@@ -25,7 +25,7 @@ export interface NrdbDeck {
   id: number;
   uuid: string;
   date_creation: string;
-  date_upate: string;
+  date_update: string;
   name: string;
   description: string;
   mwl_code: string;
@@ -34,7 +34,7 @@ export interface NrdbDeck {
 }
 
 export interface Card {
-  id: string;
+  id: number;
   deck_id: number;
   title: string;
   quantity: number;
@@ -46,6 +46,11 @@ export interface Card {
   card_type_id: string;
   faction_id: string;
   influence_cost: number;
+}
+
+export interface CardSearchOption {
+  label: string;
+  value: Printing;
 }
 
 export class DeckDetails {
@@ -92,24 +97,24 @@ export function convertNrdbDeck(
     }
 
     cards.push({
-      id: card.id,
+      id: 0,
       deck_id: nrdbDeck.id,
       title: printing.attributes.title,
       quantity: card.count,
-      influence: printing.attributes.influence_cost * card.count,
+      influence: (printing.attributes.influence_cost ?? 0) * card.count,
       nrdb_card_id: printing.attributes.card_id,
       created_at: "",
       updated_at: "",
       nrdb_printing_id: card.id,
       card_type_id: printing.attributes.card_type_id,
       faction_id: printing.attributes.faction_id,
-      influence_cost: printing.attributes.influence_cost,
+      influence_cost: printing.attributes.influence_cost ?? 0,
     });
   }
 
   return {
     details: {
-      id: nrdbDeck.id,
+      id: 0,
       player_id: 0,
       side_id: identity?.attributes.side_id ?? "",
       name: nrdbDeck.name,
@@ -119,7 +124,7 @@ export function convertNrdbDeck(
       nrdb_uuid: nrdbDeck.uuid,
       identity_nrdb_card_id: identity?.attributes.card_id ?? "",
       created_at: nrdbDeck.date_creation,
-      updated_at: nrdbDeck.date_upate,
+      updated_at: nrdbDeck.date_update,
       identity_nrdb_printing_id: identityNrdbId,
       user_id: 0,
       faction_id: identity?.attributes.faction_id ?? "",
@@ -233,4 +238,12 @@ export async function loadPrintings(query?: string) {
   }
 
   return null;
+}
+
+export function transformCardLookup(
+  response: PrintingsResponse,
+): CardSearchOption[] {
+  return response.data.map((p) => {
+    return { label: p.attributes.title, value: p };
+  });
 }

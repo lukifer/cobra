@@ -9,6 +9,7 @@
     type IdentityNames,
   } from "../identities/Identity";
   import { onMount } from "svelte";
+  import ProgressButton from "../widgets/ProgressButton.svelte";
 
   let {
     userId,
@@ -34,6 +35,12 @@
   async function savePlayer() {
     playerEdit = await savePlayerRequest(tournament.id, playerEdit);
     readOnly = true;
+
+    if (tournament.nrdb_deck_registration) {
+      window.location.href = `/beta/tournaments/${tournament.id}/registration`;
+    }
+
+    return true;
   }
 </script>
 
@@ -246,10 +253,11 @@
     </div>
 
     <div class="text-right">
-      <button
-        type="button"
-        class="btn btn-primary"
+      <ProgressButton
+        css="btn btn-primary"
         disabled={playerEdit.id === 0 && !playerAgreed}
+        inProgressText="Registering player"
+        completeText="Registered player"
         onclick={savePlayer}
       >
         <FontAwesomeIcon icon="user-plus" />
@@ -260,7 +268,7 @@
         {:else}
           Register
         {/if}
-      </button>
+      </ProgressButton>
     </div>
   </div>
 {/if}

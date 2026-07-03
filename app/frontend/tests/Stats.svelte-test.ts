@@ -19,11 +19,13 @@ vi.mock("../pairings/PairingsData", async (importOriginal) => ({
 
 // These stubs allow us to test ApexCharts
 // (from https://github.com/apexcharts/react-apexcharts/issues/425#issuecomment-2066446183)
-const ResizeObserver = vi.fn(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
+const ResizeObserver = vi.fn(function () {
+  return {
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
+  };
+});
 const SVGElement = vi.fn(() => ({
   getScreenCTM: vi.fn(() => ({
     writable: true,

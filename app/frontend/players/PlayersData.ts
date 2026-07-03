@@ -39,7 +39,9 @@ export async function loadPlayer(tournamentId: number, playerId: number) {
       },
     );
 
-    return (await response.json()) as Player;
+    const player = new Player();
+    Object.assign(player, await response.json());
+    return player;
   } catch {
     globalMessages.errors.push(
       `Error loading player data for player ${playerId}.`,

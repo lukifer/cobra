@@ -15,7 +15,8 @@
      */
     "allowJs": true,
     "checkJs": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "noEmit": true
   },
   "include": ["app/**/*.ts", "app/**/*.js", "app/**/*.svelte", "eslint.config.mjs", "svelte.config.js",
     "vitest-setup.*.ts", "vitest.config.ts"],

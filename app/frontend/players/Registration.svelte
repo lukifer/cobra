@@ -13,18 +13,22 @@
     Deck,
     convertNrdbDeck,
     getPrintings,
+    sortCards,
   } from "../utils/decks.svelte";
   import { loadDecks, savePlayer } from "../players/PlayersData";
   import DeckDisplay from "./DeckDisplay.svelte";
+  import { Identity } from "../identities/Identity";
 
   let {
     tournamentId,
     playerId,
     nrdbDecks,
+    editMode = false,
   }: {
     tournamentId: number;
     playerId: number;
     nrdbDecks: NrdbDeck[];
+    editMode?: boolean;
   } = $props();
 
   const THE_CATALYST_NRDB_CODE = "30076";
@@ -38,9 +42,6 @@
   let corpDeck = $state(new Deck());
   let originalRunnerDeck = $state(new Deck());
   let runnerDeck = $state(new Deck());
-  let editMode = $state(
-    new URLSearchParams(document.location.search).get("edit") === "true",
-  );
   let editing = $state(false);
 
   onMount(async () => {
@@ -57,6 +58,8 @@
       if (printings.size > 0) {
         decks = nrdbDecks.map((d) => convertNrdbDeck(d, printings));
       }
+    } else {
+      decks = [];
     }
   });
 
@@ -80,7 +83,9 @@
 
   function resetEditDecks() {
     corpDeck = $state.snapshot(originalCorpDeck);
+    sortCards(corpDeck.cards);
     runnerDeck = $state.snapshot(originalRunnerDeck);
+    sortCards(runnerDeck.cards);
   }
 
   async function save() {
@@ -88,24 +93,36 @@
       return true;
     }
 
-    player.corp_deck = corpDeck;
-    player.corp_id = {
+    player.corp_deck =
+      corpDeck.details.identity_title || corpDeck.cards.length > 0
+        ? corpDeck
+        : undefined;
+    player.corp_id = Object.assign(new Identity(), {
       name: corpDeck.details.identity_title ?? "",
       faction: corpDeck.details.faction_id,
-    };
-    player.runner_deck = runnerDeck;
-    player.runner_id = {
+    });
+    player.runner_deck =
+      runnerDeck.details.identity_title || runnerDeck.cards.length > 0
+        ? runnerDeck
+        : undefined;
+    player.runner_id = Object.assign(new Identity(), {
       name: runnerDeck.details.identity_title ?? "",
       faction: runnerDeck.details.faction_id,
-    };
-    player = await savePlayer(
-      tournamentId,
+    });
+    Object.assign(
       player,
-      tournament && player.user_id !== tournament.user_id,
+      await savePlayer(
+        tournamentId,
+        player,
+        tournament && player.user_id !== tournament.user_id,
+      ),
     );
 
     await loadTournamentDecks();
-    toggleEditing();
+
+    if (editing) {
+      toggleEditing();
+    }
 
     return true;
   }
@@ -149,12 +166,12 @@
   </button>
 {/snippet}
 
-{#snippet decksList(isCorp: boolean, selectedDeck: Deck | null)}
+{#snippet decksList(isCorp: boolean, selectedDeck: Deck)}
   {#if decks !== null}
     <ul class="list-group list-group-flush" style="border-bottom: 0;">
       <li class="list-group-item selected-deck">
-        <div class="selected-deck-buttons">
-          {#if selectedDeck}
+        {#if selectedDeck.details.nrdb_uuid}
+          <div class="selected-deck-buttons">
             <button
               type="button"
               title="Deselect"
@@ -165,9 +182,7 @@
             >
               <FontAwesomeIcon icon="close" />
             </button>
-          {/if}
-        </div>
-        {#if selectedDeck}
+          </div>
           <div
             class="selected-deck-identity"
             style={`background-image:url(https://card-images.netrunnerdb.com/v2/small/${selectedDeck.details.identity_nrdb_printing_id}.jpg)`}
@@ -185,7 +200,7 @@
       </li>
     </ul>
     <ul class="list-group list-group-flush overflow-auto" style="height: 24em;">
-      {#each decks.filter((d) => d.details.side_id === (isCorp ? "corp" : "runner")) as deck (deck.details.id)}
+      {#each decks.filter((d) => d.details.side_id === (isCorp ? "corp" : "runner")) as deck (deck.details.nrdb_uuid)}
         <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -->
         {@render deckListItem(deck, isCorp)}
       {/each}
@@ -195,7 +210,7 @@
 
 {#if player && player.id !== 0 && tournament}
   <!-- General registration information -->
-  <div class="card mb-3">
+  <div class="card mb-3" aria-label="registration information">
     <div class="card-header">
       <div class="d-flex justify-content-between">
         <h5 class="mb-0">My Registration Information</h5>
@@ -330,19 +345,25 @@
 
     <div class="row mb-3 justify-content-center dontprint">
       {#if decks !== null}
-        <div class="col-md-6">
-          <div class="card">
-            <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -->
-            {@render decksList(true, corpDeck)}
+        {#if decks.length > 0}
+          <div class="col-md-6">
+            <div class="card" aria-label="NRDB corp decks">
+              <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -->
+              {@render decksList(true, corpDeck)}
+            </div>
           </div>
-        </div>
 
-        <div class="col-md-6">
-          <div class="card">
-            <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -->
-            {@render decksList(false, runnerDeck)}
+          <div class="col-md-6">
+            <div class="card" aria-label="NRDB runner decks">
+              <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -->
+              {@render decksList(false, runnerDeck)}
+            </div>
           </div>
-        </div>
+        {:else}
+          <div class="alert alert-warning">
+            You have no decks saved in NRDB.
+          </div>
+        {/if}
       {:else}
         <div class="spinner-border m-auto"></div>
       {/if}
@@ -352,12 +373,35 @@
   <!-- Deck display -->
   <div class="row">
     <div class="col-md-6">
-      <DeckDisplay bind:deck={corpDeck} isCorp={true} editMode={editing} />
+      <DeckDisplay
+        bind:deck={corpDeck}
+        originalDeck={originalCorpDeck}
+        isCorp={true}
+        editMode={editing}
+      />
     </div>
 
     <div class="col-md-6">
-      <DeckDisplay bind:deck={runnerDeck} isCorp={false} editMode={editing} />
+      <DeckDisplay
+        bind:deck={runnerDeck}
+        originalDeck={originalRunnerDeck}
+        isCorp={false}
+        editMode={editing}
+      />
     </div>
+
+    {#if editing}
+      <div class="col-md-12">
+        <ProgressButton
+          css="btn btn-success float-right"
+          inProgressText="Saving"
+          completeText="Saved"
+          onclick={save}
+        >
+          <FontAwesomeIcon icon="floppy-o" /> Save
+        </ProgressButton>
+      </div>
+    {/if}
   </div>
 {:else}
   <div class="d-flex align-items-center m-2">

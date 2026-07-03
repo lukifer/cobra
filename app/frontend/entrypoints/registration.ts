@@ -23,6 +23,7 @@ document.addEventListener("turbolinks:load", function () {
           Number(anchor.getAttribute("data-tournament-id") ?? "") || -1,
         playerId: Number(anchor.getAttribute("data-player-id") ?? "") || -1,
         nrdbDecks: decks,
+        editMode: anchor.getAttribute("data-edit-mode") === "true",
       },
     });
   }

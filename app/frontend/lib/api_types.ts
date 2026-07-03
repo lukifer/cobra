@@ -49,9 +49,9 @@ export interface Printing {
     card_type_id: string;
     side_id: string;
     faction_id: string;
-    influence_cost: number;
-    influence_limit: number;
-    minimum_deck_size: number;
+    influence_cost: number | null;
+    influence_limit: number | null;
+    minimum_deck_size: number | null;
   };
 }
 
