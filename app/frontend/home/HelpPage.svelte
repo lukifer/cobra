@@ -43,6 +43,39 @@
   <h1>How to use Cobra</h1>
   <p>Use Cobra to run your tournament!</p>
 
+  <p>Smash-up is a semi-random casual format for Netrunner! Players will bring "half-decks", each player with a different ID.</p>
+  
+  <p>Each round, you'll receive a random pairing of 2 unique half-decks for the side you are playing. You'll shuffle them together, add a Sure Gamble / Hedge Fund, and then play the result with the text of both identities active.</p>
+
+  <h1>Half-deck Construction:</h1>
+
+Sleeves: All players must select a unique sleeve color, and sleeve 1 corp and 1 runner half-deck in it. You can sleeve your cards yourself, or we'll provide sleeves on the day of.
+
+Deck Size: Your deck must be half as big as the minimum deck size for your identity as a runner, or half as big as the nearest agenda threshold to your minimum deck size for a corp, rounding down:
+-40 card runner -> 20 card half-deck
+-45 card runner -> 22 card half-deck
+-45 card corp (49) -> 24 card half-deck
+-50 card corp (54) -> 27 card half-deck
+
+Agenda Points: Corp half-decks must include half the number of minimum agenda points for their size (or 1 more)
+-24 card half-deck -> 10-11 agenda points
+-27 card half-deck -> 11-12 agenda points
+
+Influence: Half-decks receive half the influence of their identity, rounded up, and may only include 1 copy of any neutral cards
+-15 influence ID -> 8 influence half-deck
+-17 influence ID -> 9 influence half-deck
+
+Sure Gamble/Hedge Fund: Bring an extra copy of Sure Gamble/Hedge Fund, you'll add 1 copy to your deck after combining the two half-decks.
+Rules for play:
+
+Decks will have 2 different colors of sleeve, which will have a minor impact on gameplay that slightly advantages the runner. Generally, players should attempt to mitigate that where possible:
+
+Shuffling: Shuffling and/or cutting should be done blind, not controlling for the color that ends up on top.
+
+HQ Access/Damage: Rolling dice or similar randomization method should be used to pick which cards are affected.
+  
+  <p>Final scores will be a combination of your personal player record, combined with the record of the decks you built.</p>
+
   <hr class="my-4" />
 
   <h2 id="help_login">Log In</h2>

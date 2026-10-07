@@ -53,7 +53,9 @@
 <div>
   <GlobalMessages />
 
-  <h4>Today's tournaments</h4>
+  <h1>This isn't ready and you probably shouldn't use it</h1>
+  <br />
+  <h4>Today's Smashup tournaments</h4>
   {#if loading}
     <div>Loading...</div>
   {:else if tournaments.length === 0}

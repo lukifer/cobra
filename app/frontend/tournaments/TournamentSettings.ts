@@ -9,6 +9,14 @@ declare const Routes: {
   qr_beta_tournament_path: (tournamentId: number) => string;
 };
 
+export interface IdentityCount {
+  identity_id: number;
+  identity_name: string;
+  faction: string;
+  count: number;
+  total: number;
+}
+
 export class Tournament {
   id = 0;
   name = "";
@@ -49,6 +57,10 @@ export class Tournament {
   card_set_id: number | null = null;
   active_player_count = 0;
   dropped_player_count = 0;
+  corp_counts = [] as IdentityCount[];
+  corp_faction_counts = {} as Record<string, number>;
+  runner_counts = [] as IdentityCount[];
+  runner_faction_counts = {} as Record<string, number>;
   created_at = "";
   updated_at = "";
 

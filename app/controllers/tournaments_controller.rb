@@ -390,6 +390,8 @@ class TournamentsController < ApplicationController # rubocop:disable Metrics/Cl
                                        :card_set_id, :format_id, :deckbuilding_restriction_id, :decklist_required,
                                        :organizer_contact, :event_link, :description, :official_prize_kit_id,
                                        :additional_prizes_description, :allow_self_reporting,
+                                       :runner_faction_counts, :corp_faction_counts,
+                                       :runner_counts, :corp_counts,
                                        # Used for demo tournaments
                                        :num_players, :num_first_round_byes)
   end

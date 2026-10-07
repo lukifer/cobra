@@ -116,39 +116,45 @@
   </div>
 </div>
 
-<div class="form-group">
-  <label for="swiss_format">Swiss format</label>
-  <select
-    id="swiss_format"
-    class="form-control"
-    bind:value={tournamentEdit.swiss_format}
-  >
-    <option value="single_sided">{swissFormatDisplayString("single_sided")}</option>
-  </select>
-  {#if errors.swiss_format}
-    <div class="invalid-feedback d-block">{errors.swiss_format}</div>
-  {/if}
-</div>
-
 <div class="row">
-  <div class="col-md-6">
+  <div class="col-md-3">
     <div class="form-group">
-      <label for="tournament_type_id">Tournament Type</label>
-      <select
-        id="tournament_type_id"
+      <label for="swiss_format">Swiss format</label>
+      <div><b>Singled-sided</b></div>
+      <input id="swiss_format" type="hidden" bind:value={tournamentEdit.swiss_format} />
+      <!-- <select
+        id="swiss_format"
         class="form-control"
-        bind:value={tournamentEdit.tournament_type_id}
+        bind:value={tournamentEdit.swiss_format}
       >
-        <option value=""></option>
-        {#each options.tournament_types as tournament_type (tournament_type.id)}
-          <option value={tournament_type.id}>{tournament_type.name}</option>
-        {/each}
+        <option value="single_sided">{swissFormatDisplayString("single_sided")}</option>
       </select>
-      {#if errors.tournament_type_id}
-        <div class="invalid-feedback d-block">{errors.tournament_type_id}</div>
-      {/if}
+      {#if errors.swiss_format}
+        <div class="invalid-feedback d-block">{errors.swiss_format}</div>
+      {/if} -->
     </div>
   </div>
+
+  <div class="col-md-3">
+    <div class="form-group">
+      <label for="format_id">Play Format</label>
+      <div><b>Smashup</b></div>
+      <input id="format_id" type="hidden" value={`${mashFormats[0].id}`} />
+      <!-- <select
+        id="format_id"
+        class="form-control"
+        bind:value={tournamentEdit.format_id}
+      >
+        {#each mashFormats as format (format.id)}
+          <option value={format.id}>{format.name}</option>
+        {/each}
+      </select>
+      {#if errors.format_id}
+        <div class="invalid-feedback d-block">{errors.format_id}</div>
+      {/if} -->
+    </div>
+  </div>
+
   <div class="col-md-6">
     <div class="form-group">
       <label for="card_set_id">Legal Cardpool Up To</label>
@@ -167,27 +173,52 @@
       {/if}
     </div>
   </div>
+
+  <!-- <div class="col-md-6">
+    <div class="form-group">
+      <label for="card_set_id">Legal Cardpool Up To</label>
+      <select
+        id="card_set_id"
+        class="form-control"
+        bind:value={tournamentEdit.card_set_id}
+      >
+        <option value=""></option>
+        {#each options.card_sets as card_set (card_set.id)}
+          <option value={card_set.id}>{card_set.name}</option>
+        {/each}
+      </select>
+      {#if errors.card_set_id}
+        <div class="invalid-feedback d-block">{errors.card_set_id}</div>
+      {/if}
+    </div>
+  </div> -->
 </div>
 
 <div class="row">
   <div class="col-md-6">
     <div class="form-group">
-      <label for="format_id">Play Format</label>
+      <input id="tournament_type_id" type="hidden" value={options.tournament_types.find(x => x.name === "Community")?.id ?? ''} />
+      <!-- <input id="tournament_type_id" type="hidden" bind:value={`11`} /> -->
+      <!-- <label for="tournament_type_id">Tournament Type</label>
       <select
-        id="format_id"
+        id="tournament_type_id"
         class="form-control"
-        bind:value={tournamentEdit.format_id}
+        bind:value={tournamentEdit.tournament_type_id}
       >
         <option value=""></option>
-        {#each mashFormats as format (format.id)}
-          <option value={format.id}>{format.name}</option>
+        {#each options.tournament_types as tournament_type (tournament_type.id)}
+          <option value={tournament_type.id}>{tournament_type.name}</option>
         {/each}
       </select>
-      {#if errors.format_id}
-        <div class="invalid-feedback d-block">{errors.format_id}</div>
-      {/if}
+      {#if errors.tournament_type_id}
+        <div class="invalid-feedback d-block">{errors.tournament_type_id}</div>
+      {/if} -->
     </div>
   </div>
+
+</div>
+
+<!-- <div class="row">
   <div class="col-md-6">
     <div class="form-group">
       <label for="deckbuilding_restriction_id">Deckbuilding Restriction</label>
@@ -208,7 +239,7 @@
       {/if}
     </div>
   </div>
-</div>
+</div> -->
 
 <div class="form-check mb-3">
   <input

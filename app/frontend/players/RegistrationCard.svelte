@@ -27,6 +27,13 @@
   let playerAgreed = $state(false);
   let readOnly = $derived(playerEdit.id !== 0);
 
+  let showRunnerDupeWarning = (identity: string) => 
+    tournament.runner_counts.findIndex(({ identity_name }) => identity_name === identity) >= 0
+  ;
+  let showCorpDupeWarning = (identity: string) => 
+    tournament.corp_counts.findIndex(({ identity_name }) => identity_name === identity) >= 0
+  ;
+
   onMount(async () => {
     identityNames = await loadIdentityNames();
     playerEdit.name = player.name;
@@ -175,8 +182,13 @@
             id="corp-identity"
             placeholder="Search for corp ID"
             identityNames={identityNames ? identityNames.corp : []}
-            bind:value={playerEdit.corp_id.name}
+            duplicateWarning={tournament.corp_counts}
           />
+          {#if showCorpDupeWarning(playerEdit.corp_id.name)}
+            <div class="alert alert-danger">
+              <b>Warning:</b> There is already a player registered using <Identity identity={playerEdit.corp_id} />. It is strongly encouraged that every participant use unique identities. Please talk to the organizer before registering.
+            </div>
+          {/if}
         </div>
 
         <div class="form-group">
@@ -186,7 +198,13 @@
             placeholder="Search for runner ID"
             identityNames={identityNames ? identityNames.runner : []}
             bind:value={playerEdit.runner_id.name}
+            duplicateWarning={tournament.runner_counts}
           />
+          {#if showRunnerDupeWarning(playerEdit.runner_id.name)}
+            <div class="alert alert-danger">
+              <b>Warning:</b> There is already a player registered using <Identity identity={playerEdit.runner_id} />. It is strongly encouraged that every participant use unique identities. Please talk to the organizer before registering.
+            </div>
+          {/if}
         </div>
       {/if}
 

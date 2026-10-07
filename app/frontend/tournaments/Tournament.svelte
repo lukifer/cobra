@@ -8,6 +8,7 @@
   import ModalDialog from "../widgets/ModalDialog.svelte";
   import { marked } from "marked";
   import DOMPurify from "dompurify";
+  import Faction from "../widgets/Faction.svelte";
 
   let {
     tournamentId,
@@ -86,6 +87,37 @@
         <div class="card">
           <!-- Shortcode -->
           {#if tournament.slug}
+            <li class="list-group-item" aria-label="shortcode">
+              <div class="d-flex mb-2">
+                <div class="flex-fill">
+                  <h6>Registered Runners:</h6>
+                  {#if Object.keys(tournament.runner_faction_counts).length < 1}
+                    <div>None</div>
+                  {/if}
+                  {#each Object.keys(tournament.runner_faction_counts) as faction (faction)}
+                    <div><Faction name={faction} suffix={`(${tournament.runner_faction_counts[faction]})`} /></div>
+                    {#each tournament.runner_counts.filter(x => x.faction === faction) as runner (runner)}
+                      <div class="small">{runner.identity_name}</div>
+                      <!-- TODO: show count if multiples -->
+                    {/each}
+                  {/each}
+                </div>
+                <div class="flex-fill">
+                  <h6>Registered Corps:</h6>
+                  {#if Object.keys(tournament.corp_faction_counts).length < 1}
+                    <div>None</div>
+                  {/if}
+                  {#each Object.keys(tournament.corp_faction_counts) as faction (faction)}
+                    <div><Faction name={faction} suffix={`(${tournament.corp_faction_counts[faction]})`} /></div>
+                    {#each tournament.corp_counts.filter(x => x.faction === faction) as corp (corp)}
+                      <div class="small">{corp.identity_name}</div>
+                      <!-- TODO: show count if multiples -->
+                    {/each}
+                  {/each}
+                </div>
+              </div>
+            </li>
+
             <li class="list-group-item" aria-label="shortcode">
               <div class="small text-secondary">Shortcode:</div>
               {tournament.slug}

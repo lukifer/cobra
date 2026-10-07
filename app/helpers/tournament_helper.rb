@@ -44,8 +44,25 @@ module TournamentHelper # rubocop:disable Style/Documentation
       deckbuilding_restriction_id: tournament.deckbuilding_restriction_id,
       card_set_id: tournament.card_set_id,
       created_at: tournament.created_at,
-      updated_at: tournament.updated_at
+      updated_at: tournament.updated_at,
+      corp_counts: identity_counts_json(tournament, :corp),
+      runner_counts: identity_counts_json(tournament, :runner),
+      corp_faction_counts: tournament.corp_faction_counts,
+      runner_faction_counts: tournament.runner_faction_counts
     }
+  end
+
+  def identity_counts_json(tournament, side)
+    counts = tournament.public_send(:"#{side}_counts", tournament.players.active)
+    counts.map do |identity, count, total|
+      {
+        identity_id: identity.id,
+        identity_name: identity.name,
+        faction: identity.faction,
+        count: count,
+        total: total
+      }
+    end
   end
 
   def tournament_policies_json(tournament)

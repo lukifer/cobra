@@ -129,14 +129,20 @@
   {#if !tournament.nrdb_deck_registration || playerEdit.id !== 0}
     <!-- Corp ID -->
     <div class="col w-25">
-      <label for="player_corp_id_{playerEdit.id}">Corp ID</label>
+      <label for="player_corp_id_{playerEdit.id}">Corp ID asdf</label>
       <IdentitySelect
         id="player_corp_id_{playerEdit.id}"
         placeholder="Search for corp ID"
         enabled={!tournament.nrdb_deck_registration}
         identityNames={identityNames.corp}
         bind:value={playerEdit.corp_id.name}
+        duplicateWarning={tournament.corp_counts}
       />
+      <!-- {#if showCorpDupeWarning(playerEdit.corp_id.name)}
+        <div class="alert alert-danger">
+          <b>Warning:</b> There is already a player registered using <Identity identity={playerEdit.corp_id} />. It is strongly encouraged that every participant use unique identities. Please talk to the organizer before registering.
+        </div>
+      {/if} -->
     </div>
 
     <!-- Runner ID -->
@@ -148,6 +154,7 @@
         enabled={!tournament.nrdb_deck_registration}
         identityNames={identityNames.runner}
         bind:value={playerEdit.runner_id.name}
+        duplicateWarning={tournament.runner_counts}
       />
     </div>
   {:else}

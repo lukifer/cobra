@@ -71,6 +71,38 @@ class TournamentResource < ApplicationResource
     @object.players.dropped.count
   end
 
+  attribute :corp_faction_counts, :hash do
+    @object.corp_faction_counts
+  end
+
+  attribute :runner_faction_counts, :hash do
+    @object.runner_faction_counts
+  end
+
+  attribute :corp_counts, :array do
+    @object.corp_counts(@object.players.active).map do |identity, count, total|
+      {
+        identity_id: identity.id,
+        identity_name: identity.name,
+        faction: identity.faction,
+        count: count,
+        total: total
+      }
+    end
+  end
+
+  attribute :runner_counts, :array do
+    @object.runner_counts(@object.players.active).map do |identity, count, total|
+      {
+        identity_id: identity.id,
+        identity_name: identity.name,
+        faction: identity.faction,
+        count: count,
+        total: total
+      }
+    end
+  end
+
   attribute :created_at, :datetime
   attribute :updated_at, :datetime
 
